@@ -1,0 +1,7 @@
+{
+  "name": "SegundaEntrega-BalanziApp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
