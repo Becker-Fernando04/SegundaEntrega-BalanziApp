@@ -34,4 +34,35 @@
 
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import "@ionic/angular/css/palettes/dark.system.css";
+/* @import "@ionic/angular/css/palettes/dark.system.css"; */
+
+/* Toolbar sin fondo para el título BalanziApp */
+ion-header.ion-no-border ion-toolbar,
+ion-header ion-toolbar {
+  --background: transparent;
+  --border-width: 0;
+  --border-color: transparent;
+  --color: #1b3d2f;
+}
+
+ion-title {
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: 0.3px;
+}
+
+ion-content {
+  --background: linear-gradient(180deg, #ffffff 0%, #e2f4e5 100%);
+  background: linear-gradient(180deg, #ffffff 0%, #e2f4e5 100%);
+}
+
+ion-card {
+  --background: #ffffff;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+ion-tab-bar {
+  --background: #ffffff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}

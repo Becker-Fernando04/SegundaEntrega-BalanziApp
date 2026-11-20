@@ -1,0 +1,81 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>BalanziApp</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Sección: Presupuestos Activos (1 tarjeta) -->
+  <section class="seccion-bloque">
+    <h2 class="titulo-seccion">Presupuestos activos</h2>
+
+    <ion-card class="tarjeta-presupuesto-principal">
+      <ion-card-header>
+        <div class="header-fila">
+          <div>
+            <ion-card-subtitle>Presupuesto Mensual</ion-card-subtitle>
+            <ion-card-title>{{ presupuestoActivo.nombre }}</ion-card-title>
+          </div>
+          <ion-badge color="success" class="badge-estado">En curso</ion-badge>
+        </div>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="montos-fila">
+          <div class="monto-item">
+            <span class="monto-label">Gastado</span>
+            <span class="monto-valor gastado">$ {{ presupuestoActivo.gastado | number:'1.2-2' }}</span>
+          </div>
+          <div class="monto-item align-right">
+            <span class="monto-label">Límite Total</span>
+            <span class="monto-valor">$ {{ presupuestoActivo.total | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <ion-progress-bar
+          [value]="presupuestoActivo.gastado / presupuestoActivo.total"
+          [color]="(presupuestoActivo.gastado / presupuestoActivo.total) > 0.85 ? 'danger' : 'primary'">
+        </ion-progress-bar>
+
+        <div class="resumen-pie">
+          <p>Disponible: <strong>$ {{ (presupuestoActivo.total - presupuestoActivo.gastado) | number:'1.2-2' }}</strong></p>
+          <p>{{ ((presupuestoActivo.gastado / presupuestoActivo.total) * 100) | number:'1.0-0' }}% utilizado</p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+  <!-- Sección: Metas de Ahorro (2 tarjetas una al lado de la otra) -->
+  <section class="seccion-bloque">
+    <h2 class="titulo-seccion">Metas de ahorro</h2>
+
+    <ion-grid class="grid-metas">
+      <ion-row>
+        <ion-col size="6" *ngFor="let meta of metasAhorro">
+          <ion-card class="tarjeta-meta">
+            <ion-card-content>
+              <div class="icono-meta-contenedor">
+                <ion-icon [name]="meta.icono" [color]="meta.color"></ion-icon>
+              </div>
+
+              <h3 class="meta-titulo">{{ meta.nombre }}</h3>
+              <p class="meta-monto-actual">$ {{ meta.actual | number:'1.0-0' }}</p>
+              <p class="meta-monto-objetivo">Meta: $ {{ meta.objetivo | number:'1.0-0' }}</p>
+
+              <ion-progress-bar
+                [value]="meta.actual / meta.objetivo"
+                [color]="meta.color">
+              </ion-progress-bar>
+
+              <span class="meta-porcentaje">
+                {{ ((meta.actual / meta.objetivo) * 100) | number:'1.0-0' }}%
+              </span>
+            </ion-card-content>
+          </ion-card>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </section>
+
+</ion-content>

@@ -1,0 +1,79 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>BalanziApp</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Tarjeta Balance General -->
+  <ion-card class="balance-card">
+    <ion-card-header>
+      <ion-card-subtitle>Balance General</ion-card-subtitle>
+      <ion-card-title>$ {{ balance.balance | number:'1.2-2' }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Mes actual</p>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Tarjetas pequeñas: Ingresos y Gastos -->
+  <ion-grid>
+    <ion-row>
+      <ion-col size="6">
+        <ion-card class="summary-card ingreso-card">
+          <ion-card-header>
+            <ion-card-subtitle>Ingresos</ion-card-subtitle>
+            <ion-card-title>$ {{ balance.ingresos | number:'1.2-2' }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-icon name="arrow-up-circle-outline" color="success"></ion-icon>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+      <ion-col size="6">
+        <ion-card class="summary-card gasto-card">
+          <ion-card-header>
+            <ion-card-subtitle>Gastos</ion-card-subtitle>
+            <ion-card-title>$ {{ balance.gastos | number:'1.2-2' }}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <ion-icon name="arrow-down-circle-outline" color="danger"></ion-icon>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <!-- Tarjeta Movimientos Recientes -->
+  <ion-card class="recent-card">
+    <ion-card-header>
+      <ion-card-title>Movimientos Recientes</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list lines="none">
+        <ion-item *ngFor="let movimiento of movimientosRecientes">
+          <ion-icon
+            slot="start"
+            [name]="movimiento.icono || (movimiento.tipo === 'ingreso' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline')"
+            [color]="movimiento.tipo === 'ingreso' ? 'success' : 'danger'">
+          </ion-icon>
+          <ion-label>
+            <h3>{{ movimiento.descripcion }}</h3>
+            <p>{{ movimiento.categoria }} • {{ movimiento.fecha }}</p>
+          </ion-label>
+          <ion-note slot="end" [color]="movimiento.tipo === 'ingreso' ? 'success' : 'danger'">
+            {{ movimiento.tipo === 'ingreso' ? '+' : '-' }}$ {{ movimiento.monto | number:'1.2-2' }}
+          </ion-note>
+        </ion-item>
+
+        <ion-item *ngIf="movimientosRecientes.length === 0">
+          <ion-label class="ion-text-center">
+            <p>Sin movimientos registrados en la base de datos</p>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+</ion-content>

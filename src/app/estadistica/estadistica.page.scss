@@ -1,0 +1,126 @@
+.botonera-segment {
+  margin: 12px 0 16px 0;
+  border-radius: 12px;
+}
+
+.seccion-estadistica {
+  margin-bottom: 22px;
+}
+
+.titulo-seccion {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 14px 4px 8px 4px;
+  color: var(--ion-color-dark);
+}
+
+.tarjeta-estadistica {
+  margin: 0;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  ion-card-header {
+    padding-bottom: 8px;
+  }
+
+  ion-card-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+}
+
+.categoria-fila {
+  margin-bottom: 14px;
+
+  &:last-child {
+    margin-bottom: 4px;
+  }
+}
+
+.categoria-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.categoria-nombre {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  ion-icon {
+    font-size: 1.25rem;
+  }
+
+  span {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+}
+
+.categoria-monto {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ion-color-medium-shade);
+}
+
+ion-progress-bar {
+  height: 8px;
+  border-radius: 4px;
+}
+
+.item-evolucion {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 12px;
+
+  h3 {
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+}
+
+.barras-comparativas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.barra-contenedor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .label-barra {
+    font-size: 0.72rem;
+    color: var(--ion-color-medium);
+    width: 50px;
+  }
+
+  ion-progress-bar {
+    flex: 1;
+    height: 6px;
+  }
+}
+
+.totales-mes {
+  text-align: right;
+  min-width: 90px;
+
+  p {
+    margin: 2px 0;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .ingreso-txt {
+    color: var(--ion-color-success);
+  }
+
+  .gasto-txt {
+    color: var(--ion-color-danger);
+  }
+}

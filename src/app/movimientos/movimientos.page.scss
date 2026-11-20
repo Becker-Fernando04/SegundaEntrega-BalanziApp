@@ -1,0 +1,67 @@
+.botonera-segment {
+  margin: 12px 0 16px 0;
+  border-radius: 12px;
+}
+
+.grupo-seccion {
+  margin-bottom: 20px;
+}
+
+.titulo-seccion {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin: 16px 4px 8px 4px;
+  color: var(--ion-color-dark);
+}
+
+.tarjeta-movimiento {
+  margin: 0 0 10px 0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  ion-card-content {
+    padding: 12px 16px;
+  }
+}
+
+.fila-movimiento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.icono-detalle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  ion-icon {
+    font-size: 1.8rem;
+  }
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+  }
+
+  p {
+    margin: 2px 0 0 0;
+    font-size: 0.8rem;
+    color: var(--ion-color-medium);
+  }
+}
+
+.monto-texto {
+  font-size: 1rem;
+  font-weight: 700;
+
+  &.ingreso {
+    color: var(--ion-color-success);
+  }
+
+  &.gasto {
+    color: var(--ion-color-danger);
+  }
+}

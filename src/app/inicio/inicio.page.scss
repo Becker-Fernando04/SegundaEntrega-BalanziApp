@@ -1,0 +1,54 @@
+.balance-card {
+  margin: 0 0 8px 0;
+  border-radius: 16px;
+
+  ion-card-title {
+    font-size: 2rem;
+    font-weight: 700;
+  }
+
+  ion-card-subtitle {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+}
+
+.summary-card {
+  margin: 0;
+  border-radius: 16px;
+
+  ion-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  ion-card-subtitle {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  ion-icon {
+    font-size: 1.8rem;
+  }
+}
+
+ion-grid {
+  padding: 0 0 8px 0;
+}
+
+ion-col {
+  padding: 4px;
+}
+
+.recent-card {
+  margin: 0;
+  border-radius: 16px;
+  overflow: hidden;
+
+  ion-card-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+}

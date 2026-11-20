@@ -1,0 +1,87 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>BalanziApp</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Botonera: Todos, Diseño, Mensual, Anual -->
+  <ion-segment [(ngModel)]="filtroEstadistica" mode="md" class="botonera-segment">
+    <ion-segment-button value="todos">
+      <ion-label>Todos</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="diseño">
+      <ion-label>Diseño</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="mensual">
+      <ion-label>Mensual</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="anual">
+      <ion-label>Anual</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <!-- Sección: Gastos por categoría -->
+  <section class="seccion-estadistica">
+    <h2 class="titulo-seccion">Gastos por categoría</h2>
+
+    <ion-card class="tarjeta-estadistica">
+      <ion-card-header>
+        <ion-card-subtitle>Distribución del período</ion-card-subtitle>
+        <ion-card-title>Total: $ {{ totalGastos | number:'1.2-2' }}</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div *ngFor="let item of gastosPorCategoria" class="categoria-fila">
+          <div class="categoria-header">
+            <div class="categoria-nombre">
+              <ion-icon [name]="item.icono" [color]="item.color"></ion-icon>
+              <span>{{ item.categoria }}</span>
+            </div>
+            <span class="categoria-monto">$ {{ item.monto | number:'1.2-2' }} ({{ item.porcentaje }}%)</span>
+          </div>
+          <ion-progress-bar [value]="item.porcentaje / 100" [color]="item.color"></ion-progress-bar>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+  <!-- Sección: Evolución mensual -->
+  <section class="seccion-estadistica">
+    <h2 class="titulo-seccion">Evolución mensual</h2>
+
+    <ion-card class="tarjeta-estadistica">
+      <ion-card-header>
+        <ion-card-subtitle>Comparativa Ingresos vs Gastos</ion-card-subtitle>
+        <ion-card-title>Últimos Meses</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-list lines="none">
+          <ion-item *ngFor="let mes of evolucionMensual" class="item-evolucion">
+            <ion-label>
+              <h3>{{ mes.mes }}</h3>
+              <div class="barras-comparativas">
+                <div class="barra-contenedor">
+                  <span class="label-barra">Ingresos</span>
+                  <ion-progress-bar color="success" [value]="mes.ingresos / mes.maximo"></ion-progress-bar>
+                </div>
+                <div class="barra-contenedor">
+                  <span class="label-barra">Gastos</span>
+                  <ion-progress-bar color="danger" [value]="mes.gastos / mes.maximo"></ion-progress-bar>
+                </div>
+              </div>
+            </ion-label>
+
+            <div slot="end" class="totales-mes">
+              <p class="ingreso-txt">+$ {{ mes.ingresos | number:'1.0-0' }}</p>
+              <p class="gasto-txt">-$ {{ mes.gastos | number:'1.0-0' }}</p>
+            </div>
+          </ion-item>
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+</ion-content>

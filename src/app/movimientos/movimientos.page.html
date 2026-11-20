@@ -1,0 +1,94 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>BalanziApp</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- Barra de búsqueda -->
+  <ion-searchbar
+    [(ngModel)]="busqueda"
+    placeholder="Buscar movimientos..."
+    show-clear-button="focus">
+  </ion-searchbar>
+
+  <!-- Botonera: Todos, Ingresos, Gastos, Categorías -->
+  <ion-segment [(ngModel)]="filtroSeleccionado" mode="md" class="botonera-segment">
+    <ion-segment-button value="todos">
+      <ion-label>Todos</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="ingresos">
+      <ion-label>Ingresos</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="gastos">
+      <ion-label>Gastos</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="categorias">
+      <ion-label>Categorías</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <!-- Primer grupo de tarjetas apiladas -->
+  <section class="grupo-seccion">
+    <h2 class="titulo-seccion">Movimientos Recientes</h2>
+
+    <ion-card *ngFor="let item of movimientosRecientes" class="tarjeta-movimiento">
+      <ion-card-content>
+        <div class="fila-movimiento">
+          <div class="icono-detalle">
+            <ion-icon
+              [name]="item.icono || (item.tipo === 'ingreso' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline')"
+              [color]="item.tipo === 'ingreso' ? 'success' : 'danger'">
+            </ion-icon>
+            <div>
+              <h3>{{ item.descripcion }}</h3>
+              <p>{{ item.categoria }} • {{ item.fecha }}</p>
+            </div>
+          </div>
+          <span class="monto-texto" [class.ingreso]="item.tipo === 'ingreso'" [class.gasto]="item.tipo === 'gasto'">
+            {{ item.tipo === 'ingreso' ? '+' : '-' }}$ {{ item.monto | number:'1.2-2' }}
+          </span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="movimientosRecientes.length === 0" class="tarjeta-movimiento">
+      <ion-card-content>
+        <p class="ion-text-center">No hay movimientos recientes</p>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+  <!-- Segundo grupo de tarjetas apiladas -->
+  <section class="grupo-seccion">
+    <h2 class="titulo-seccion">Historial Anterior</h2>
+
+    <ion-card *ngFor="let item of movimientosAnteriores" class="tarjeta-movimiento">
+      <ion-card-content>
+        <div class="fila-movimiento">
+          <div class="icono-detalle">
+            <ion-icon
+              [name]="item.icono || (item.tipo === 'ingreso' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline')"
+              [color]="item.tipo === 'ingreso' ? 'success' : 'danger'">
+            </ion-icon>
+            <div>
+              <h3>{{ item.descripcion }}</h3>
+              <p>{{ item.categoria }} • {{ item.fecha }}</p>
+            </div>
+          </div>
+          <span class="monto-texto" [class.ingreso]="item.tipo === 'ingreso'" [class.gasto]="item.tipo === 'gasto'">
+            {{ item.tipo === 'ingreso' ? '+' : '-' }}$ {{ item.monto | number:'1.2-2' }}
+          </span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-card *ngIf="movimientosAnteriores.length === 0" class="tarjeta-movimiento">
+      <ion-card-content>
+        <p class="ion-text-center">No hay movimientos en el historial anterior</p>
+      </ion-card-content>
+    </ion-card>
+  </section>
+
+</ion-content>
