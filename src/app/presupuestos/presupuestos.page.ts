@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
 import { DatabaseService, Presupuesto, MetaAhorro } from '../services/database.service';
+import { LanguageService, Traducciones } from '../services/language.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -20,8 +21,13 @@ export class PresupuestosPage implements OnInit, OnDestroy {
   metasAhorro: MetaAhorro[] = [];
   private subs: Subscription = new Subscription();
 
+  get t(): Traducciones {
+    return this.langService.t;
+  }
+
   constructor(
     private dbService: DatabaseService,
+    public langService: LanguageService,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) { }
@@ -38,6 +44,11 @@ export class PresupuestosPage implements OnInit, OnDestroy {
     this.subs.add(
       this.dbService.dataChanged$.subscribe(() => {
         this.cargarPresupuestos();
+      })
+    );
+    this.subs.add(
+      this.langService.idiomaActual$.subscribe(() => {
+        this.cdr.detectChanges();
       })
     );
   }

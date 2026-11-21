@@ -12,8 +12,12 @@ const routes: Routes = [
     loadChildren: () => import('./tabs/tabs.module').then(m => m.TabsPageModule)
   },
   {
-    path: 'folder/:folder',
-    loadChildren: () => import('./folder/folder.module').then(m => m.FolderPageModule)
+    path: 'login',
+    loadChildren: () => import('./login/login.module').then(m => m.LoginPageModule)
+  },
+  {
+    path: 'ajustes',
+    loadChildren: () => import('./ajustes/ajustes.module').then( m => m.AjustesPageModule)
   }
 ];
 

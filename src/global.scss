@@ -36,6 +36,63 @@
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 /* @import "@ionic/angular/css/palettes/dark.system.css"; */
 
+/* Tipografía global */
+:root, html, body, * {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Cabecera personalizada BalanziApp */
+.app-header {
+  padding: 16px 16px 8px 16px;
+  background: transparent;
+
+  .top-actions-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .header-icon-btn {
+      --padding-start: 0;
+      --padding-end: 0;
+      --padding-top: 0;
+      --padding-bottom: 0;
+      margin: 0;
+      height: 38px;
+      width: 38px;
+      --color: #1b3d2f;
+
+      ion-icon {
+        font-size: 1.85rem;
+      }
+    }
+  }
+
+  .brand-title-container {
+    padding: 0 4px;
+
+    .brand-logo-text {
+      margin: 0;
+      font-size: 2.6rem;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+
+      .brand-bold {
+        font-weight: 800;
+        color: #1b4d2a;
+        background: linear-gradient(180deg, #1b4d2a 10%, #297440 90%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .brand-light {
+        font-weight: 300;
+        color: #1b4d2a;
+      }
+    }
+  }
+}
+
 /* Toolbar sin fondo para el título BalanziApp */
 ion-header.ion-no-border ion-toolbar,
 ion-header ion-toolbar {

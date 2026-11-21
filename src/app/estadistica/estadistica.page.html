@@ -1,84 +1,105 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar>
-    <ion-title>BalanziApp</ion-title>
-  </ion-toolbar>
+<ion-header class="ion-no-border app-header">
+  <div class="top-actions-bar">
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/login">
+      <ion-icon slot="icon-only" name="person-circle-outline"></ion-icon>
+    </ion-button>
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/ajustes">
+      <ion-icon slot="icon-only" name="settings-outline"></ion-icon>
+    </ion-button>
+  </div>
+
+  <div class="brand-title-container">
+    <h1 class="brand-logo-text">
+      <span class="brand-bold">Balanzi</span><span class="brand-light">App</span>
+    </h1>
+  </div>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
-  <!-- Botonera: Todos, Diseño, Mensual, Anual -->
-  <ion-segment [(ngModel)]="filtroEstadistica" mode="md" class="botonera-segment">
+  <!-- Cinta de opciones: Todos, Mensual, Trimestral, Anual -->
+  <ion-segment [(ngModel)]="filtroEstadistica" (ionChange)="cambiarFiltro($event)" mode="md" class="botonera-segment">
     <ion-segment-button value="todos">
-      <ion-label>Todos</ion-label>
-    </ion-segment-button>
-    <ion-segment-button value="diseño">
-      <ion-label>Diseño</ion-label>
+      <ion-label>{{ t.filtroTodos }}</ion-label>
     </ion-segment-button>
     <ion-segment-button value="mensual">
-      <ion-label>Mensual</ion-label>
+      <ion-label>{{ t.filtroMensual }}</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="trimestral">
+      <ion-label>{{ t.filtroTrimestral }}</ion-label>
     </ion-segment-button>
     <ion-segment-button value="anual">
-      <ion-label>Anual</ion-label>
+      <ion-label>{{ t.filtroAnual }}</ion-label>
     </ion-segment-button>
   </ion-segment>
 
   <!-- Sección: Gastos por categoría -->
   <section class="seccion-estadistica">
-    <h2 class="titulo-seccion">Gastos por categoría</h2>
+    <h2 class="titulo-seccion">{{ t.gastosPorCategoria }}</h2>
 
     <ion-card class="tarjeta-estadistica">
       <ion-card-header>
-        <ion-card-subtitle>Distribución del período</ion-card-subtitle>
-        <ion-card-title>Total: $ {{ totalGastos | number:'1.2-2' }}</ion-card-title>
+        <ion-card-subtitle>{{ subtituloPeriodoTraducido }}</ion-card-subtitle>
+        <ion-card-title>{{ t.total }}: $ {{ totalGastos | number:'1.2-2' }}</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
-        <div *ngFor="let item of gastosPorCategoria" class="categoria-fila">
-          <div class="categoria-header">
-            <div class="categoria-nombre">
-              <ion-icon [name]="item.icono" [color]="item.color"></ion-icon>
-              <span>{{ item.categoria }}</span>
-            </div>
-            <span class="categoria-monto">$ {{ item.monto | number:'1.2-2' }} ({{ item.porcentaje }}%)</span>
+        @if (gastosPorCategoria.length === 0) {
+          <div class="sin-datos-msg">
+            <p>{{ t.sinGastosPeriodo }}</p>
           </div>
-          <ion-progress-bar [value]="item.porcentaje / 100" [color]="item.color"></ion-progress-bar>
-        </div>
+        }
+
+        @for (item of gastosPorCategoria; track item.categoria) {
+          <div class="categoria-fila">
+            <div class="categoria-header">
+              <div class="categoria-nombre">
+                <ion-icon [name]="item.icono" [color]="item.color"></ion-icon>
+                <span>{{ langService.traducirCategoria(item.categoria) }}</span>
+              </div>
+              <span class="categoria-monto">$ {{ item.monto | number:'1.2-2' }} ({{ item.porcentaje }}%)</span>
+            </div>
+            <ion-progress-bar [value]="item.porcentaje / 100" [color]="item.color"></ion-progress-bar>
+          </div>
+        }
       </ion-card-content>
     </ion-card>
   </section>
 
-  <!-- Sección: Evolución mensual -->
+  <!-- Sección: Evolución mensual / temporal -->
   <section class="seccion-estadistica">
-    <h2 class="titulo-seccion">Evolución mensual</h2>
+    <h2 class="titulo-seccion">{{ t.evolucionMensual }}</h2>
 
     <ion-card class="tarjeta-estadistica">
       <ion-card-header>
-        <ion-card-subtitle>Comparativa Ingresos vs Gastos</ion-card-subtitle>
-        <ion-card-title>Últimos Meses</ion-card-title>
+        <ion-card-subtitle>{{ t.comparativa }}</ion-card-subtitle>
+        <ion-card-title>{{ subtituloEvolucionTraducido }}</ion-card-title>
       </ion-card-header>
 
       <ion-card-content>
         <ion-list lines="none">
-          <ion-item *ngFor="let mes of evolucionMensual" class="item-evolucion">
-            <ion-label>
-              <h3>{{ mes.mes }}</h3>
-              <div class="barras-comparativas">
-                <div class="barra-contenedor">
-                  <span class="label-barra">Ingresos</span>
-                  <ion-progress-bar color="success" [value]="mes.ingresos / mes.maximo"></ion-progress-bar>
+          @for (mes of evolucionMensual; track mes.mes) {
+            <ion-item class="item-evolucion">
+              <ion-label>
+                <h3>{{ langService.traducirPeriodo(mes.mes) }}</h3>
+                <div class="barras-comparativas">
+                  <div class="barra-contenedor">
+                    <span class="label-barra">{{ t.ingresos }}</span>
+                    <ion-progress-bar color="success" [value]="mes.maximo > 0 ? (mes.ingresos / mes.maximo) : 0"></ion-progress-bar>
+                  </div>
+                  <div class="barra-contenedor">
+                    <span class="label-barra">{{ t.gastos }}</span>
+                    <ion-progress-bar color="danger" [value]="mes.maximo > 0 ? (mes.gastos / mes.maximo) : 0"></ion-progress-bar>
+                  </div>
                 </div>
-                <div class="barra-contenedor">
-                  <span class="label-barra">Gastos</span>
-                  <ion-progress-bar color="danger" [value]="mes.gastos / mes.maximo"></ion-progress-bar>
-                </div>
-              </div>
-            </ion-label>
+              </ion-label>
 
-            <div slot="end" class="totales-mes">
-              <p class="ingreso-txt">+$ {{ mes.ingresos | number:'1.0-0' }}</p>
-              <p class="gasto-txt">-$ {{ mes.gastos | number:'1.0-0' }}</p>
-            </div>
-          </ion-item>
+              <div slot="end" class="totales-mes">
+                <p class="ingreso-txt">+$ {{ mes.ingresos | number:'1.0-0' }}</p>
+                <p class="gasto-txt">-$ {{ mes.gastos | number:'1.0-0' }}</p>
+              </div>
+            </ion-item>
+          }
         </ion-list>
       </ion-card-content>
     </ion-card>

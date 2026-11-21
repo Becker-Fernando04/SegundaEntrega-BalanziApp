@@ -1,7 +1,18 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar>
-    <ion-title>BalanziApp</ion-title>
-  </ion-toolbar>
+<ion-header class="ion-no-border app-header">
+  <div class="top-actions-bar">
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/login">
+      <ion-icon slot="icon-only" name="person-circle-outline"></ion-icon>
+    </ion-button>
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/ajustes">
+      <ion-icon slot="icon-only" name="settings-outline"></ion-icon>
+    </ion-button>
+  </div>
+
+  <div class="brand-title-container">
+    <h1 class="brand-logo-text">
+      <span class="brand-bold">Balanzi</span><span class="brand-light">App</span>
+    </h1>
+  </div>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
@@ -9,31 +20,31 @@
   <!-- Barra de búsqueda -->
   <ion-searchbar
     [(ngModel)]="busqueda"
-    placeholder="Buscar movimientos..."
+    [placeholder]="t.buscarMovimientos"
     show-clear-button="focus">
   </ion-searchbar>
 
   <!-- Botonera: Todos, Ingresos, Gastos, Categorías -->
   <ion-segment [(ngModel)]="filtroSeleccionado" mode="md" class="botonera-segment">
     <ion-segment-button value="todos">
-      <ion-label>Todos</ion-label>
+      <ion-label>{{ t.filtroTodos }}</ion-label>
     </ion-segment-button>
     <ion-segment-button value="ingresos">
-      <ion-label>Ingresos</ion-label>
+      <ion-label>{{ t.filtroIngresos }}</ion-label>
     </ion-segment-button>
     <ion-segment-button value="gastos">
-      <ion-label>Gastos</ion-label>
+      <ion-label>{{ t.filtroGastos }}</ion-label>
     </ion-segment-button>
     <ion-segment-button value="categorias">
-      <ion-label>Categorías</ion-label>
+      <ion-label>{{ t.filtroCategorias }}</ion-label>
     </ion-segment-button>
   </ion-segment>
 
   <!-- Primer grupo de tarjetas apiladas -->
   <section class="grupo-seccion">
-    <h2 class="titulo-seccion">Movimientos Recientes</h2>
+    <h2 class="titulo-seccion">{{ t.movimientosRecientes }}</h2>
 
-    <ion-card *ngFor="let item of movimientosRecientes" class="tarjeta-movimiento">
+    <ion-card *ngFor="let item of movimientosRecientes" class="tarjeta-movimiento" (click)="abrirModalEditar(item)">
       <ion-card-content>
         <div class="fila-movimiento">
           <div class="icono-detalle">
@@ -41,30 +52,41 @@
               [name]="item.icono || (item.tipo === 'ingreso' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline')"
               [color]="item.tipo === 'ingreso' ? 'success' : 'danger'">
             </ion-icon>
-            <div>
-              <h3>{{ item.descripcion }}</h3>
-              <p>{{ item.categoria }} • {{ item.fecha }}</p>
+            <div class="texto-info">
+              <h3>{{ langService.traducirDescripcion(item.descripcion) }}</h3>
+              <p>{{ langService.traducirCategoria(item.categoria) }} • {{ langService.traducirFecha(item.fecha) }}</p>
             </div>
           </div>
-          <span class="monto-texto" [class.ingreso]="item.tipo === 'ingreso'" [class.gasto]="item.tipo === 'gasto'">
-            {{ item.tipo === 'ingreso' ? '+' : '-' }}$ {{ item.monto | number:'1.2-2' }}
-          </span>
+
+          <div class="derecha-acciones">
+            <span class="monto-texto" [class.ingreso]="item.tipo === 'ingreso'" [class.gasto]="item.tipo === 'gasto'">
+              {{ item.tipo === 'ingreso' ? '+' : '-' }}$ {{ item.monto | number:'1.2-2' }}
+            </span>
+            <div class="botones-fila">
+              <ion-button fill="clear" size="small" class="btn-accion edit" (click)="abrirModalEditar(item); $event.stopPropagation()">
+                <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+              </ion-button>
+              <ion-button fill="clear" size="small" class="btn-accion delete" (click)="confirmarEliminar(item); $event.stopPropagation()">
+                <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
         </div>
       </ion-card-content>
     </ion-card>
 
     <ion-card *ngIf="movimientosRecientes.length === 0" class="tarjeta-movimiento">
       <ion-card-content>
-        <p class="ion-text-center">No hay movimientos recientes</p>
+        <p class="ion-text-center">{{ t.movimientosVaciosRecientes }}</p>
       </ion-card-content>
     </ion-card>
   </section>
 
   <!-- Segundo grupo de tarjetas apiladas -->
   <section class="grupo-seccion">
-    <h2 class="titulo-seccion">Historial Anterior</h2>
+    <h2 class="titulo-seccion">{{ t.historialAnterior }}</h2>
 
-    <ion-card *ngFor="let item of movimientosAnteriores" class="tarjeta-movimiento">
+    <ion-card *ngFor="let item of movimientosAnteriores" class="tarjeta-movimiento" (click)="abrirModalEditar(item)">
       <ion-card-content>
         <div class="fila-movimiento">
           <div class="icono-detalle">
@@ -72,23 +94,140 @@
               [name]="item.icono || (item.tipo === 'ingreso' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline')"
               [color]="item.tipo === 'ingreso' ? 'success' : 'danger'">
             </ion-icon>
-            <div>
-              <h3>{{ item.descripcion }}</h3>
-              <p>{{ item.categoria }} • {{ item.fecha }}</p>
+            <div class="texto-info">
+              <h3>{{ langService.traducirDescripcion(item.descripcion) }}</h3>
+              <p>{{ langService.traducirCategoria(item.categoria) }} • {{ langService.traducirFecha(item.fecha) }}</p>
             </div>
           </div>
-          <span class="monto-texto" [class.ingreso]="item.tipo === 'ingreso'" [class.gasto]="item.tipo === 'gasto'">
-            {{ item.tipo === 'ingreso' ? '+' : '-' }}$ {{ item.monto | number:'1.2-2' }}
-          </span>
+
+          <div class="derecha-acciones">
+            <span class="monto-texto" [class.ingreso]="item.tipo === 'ingreso'" [class.gasto]="item.tipo === 'gasto'">
+              {{ item.tipo === 'ingreso' ? '+' : '-' }}$ {{ item.monto | number:'1.2-2' }}
+            </span>
+            <div class="botones-fila">
+              <ion-button fill="clear" size="small" class="btn-accion edit" (click)="abrirModalEditar(item); $event.stopPropagation()">
+                <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+              </ion-button>
+              <ion-button fill="clear" size="small" class="btn-accion delete" (click)="confirmarEliminar(item); $event.stopPropagation()">
+                <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
         </div>
       </ion-card-content>
     </ion-card>
 
     <ion-card *ngIf="movimientosAnteriores.length === 0" class="tarjeta-movimiento">
       <ion-card-content>
-        <p class="ion-text-center">No hay movimientos en el historial anterior</p>
+        <p class="ion-text-center">{{ t.movimientosVaciosHistorial }}</p>
       </ion-card-content>
     </ion-card>
   </section>
+
+  <!-- Modal para Modificar Movimiento / Gasto -->
+  <ion-modal [isOpen]="isModalEdicionOpen" (didDismiss)="cerrarModalEditar()" [initialBreakpoint]="0.88" [breakpoints]="[0, 0.88, 1]">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ t.modificarMovimiento }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="cerrarModalEditar()">
+              <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding modal-edicion-content">
+        <!-- Selector Tipo: Gasto o Ingreso -->
+        <ion-segment [(ngModel)]="editTipo" (ionChange)="onTipoEditChange()" mode="md" class="modal-tipo-segment">
+          <ion-segment-button value="gasto">
+            <ion-icon name="arrow-down-circle-outline"></ion-icon>
+            <ion-label>{{ t.tipoGasto }}</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="ingreso">
+            <ion-icon name="arrow-up-circle-outline"></ion-icon>
+            <ion-label>{{ t.tipoIngreso }}</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+
+        <ion-list lines="inset" class="form-list">
+          <!-- Monto -->
+          <ion-item>
+            <ion-icon name="cash-outline" slot="start" color="medium"></ion-icon>
+            <ion-input
+              type="number"
+              [label]="t.monto"
+              labelPlacement="floating"
+              placeholder="0.00"
+              [(ngModel)]="editMonto">
+            </ion-input>
+          </ion-item>
+
+          <!-- Categoría -->
+          <ion-item>
+            <ion-icon name="pricetag-outline" slot="start" color="medium"></ion-icon>
+            <ion-select
+              [label]="t.categoria"
+              labelPlacement="floating"
+              [placeholder]="t.seleccionarCategoria"
+              [(ngModel)]="editCategoria">
+              <ion-select-option *ngFor="let cat of categoriasDisponibles" [value]="cat">
+                {{ langService.traducirCategoria(cat) }}
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <!-- Descripción -->
+          <ion-item>
+            <ion-icon name="document-text-outline" slot="start" color="medium"></ion-icon>
+            <ion-input
+              type="text"
+              [label]="t.descripcion"
+              labelPlacement="floating"
+              [placeholder]="t.ejemploDescripcionEdicion"
+              [(ngModel)]="editDescripcion">
+            </ion-input>
+          </ion-item>
+
+          <!-- Fecha -->
+          <ion-item>
+            <ion-icon name="calendar-outline" slot="start" color="medium"></ion-icon>
+            <ion-input
+              type="date"
+              [label]="t.fecha"
+              labelPlacement="floating"
+              [(ngModel)]="editFecha">
+            </ion-input>
+          </ion-item>
+
+          <!-- Método de Pago -->
+          <ion-item>
+            <ion-icon name="card-outline" slot="start" color="medium"></ion-icon>
+            <ion-select
+              [label]="t.metodoPago"
+              labelPlacement="floating"
+              [placeholder]="t.seleccionarMetodo"
+              [(ngModel)]="editMetodoPago">
+              <ion-select-option *ngFor="let metodo of metodosPago" [value]="metodo">
+                {{ langService.traducirMetodoPago(metodo) }}
+              </ion-select-option>
+            </ion-select>
+          </ion-item>
+        </ion-list>
+
+        <!-- Botones de Acción -->
+        <div class="modal-acciones">
+          <ion-button expand="block" color="primary" class="btn-guardar" (click)="guardarEdicion()">
+            <ion-icon slot="start" name="save-outline"></ion-icon>
+            {{ t.guardarCambios }}
+          </ion-button>
+          <ion-button expand="block" fill="outline" color="medium" class="btn-cancelar" (click)="cerrarModalEditar()">
+            {{ t.cancelar }}
+          </ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
 
 </ion-content>

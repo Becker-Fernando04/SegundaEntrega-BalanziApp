@@ -1,7 +1,18 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar>
-    <ion-title>BalanziApp</ion-title>
-  </ion-toolbar>
+<ion-header class="ion-no-border app-header">
+  <div class="top-actions-bar">
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/login">
+      <ion-icon slot="icon-only" name="person-circle-outline"></ion-icon>
+    </ion-button>
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/ajustes">
+      <ion-icon slot="icon-only" name="settings-outline"></ion-icon>
+    </ion-button>
+  </div>
+
+  <div class="brand-title-container">
+    <h1 class="brand-logo-text">
+      <span class="brand-bold">Balanzi</span><span class="brand-light">App</span>
+    </h1>
+  </div>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
@@ -9,11 +20,11 @@
   <!-- Tarjeta Balance General -->
   <ion-card class="balance-card">
     <ion-card-header>
-      <ion-card-subtitle>Balance General</ion-card-subtitle>
+      <ion-card-subtitle>{{ t.balanceGeneral }}</ion-card-subtitle>
       <ion-card-title>$ {{ balance.balance | number:'1.2-2' }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <p>Mes actual</p>
+      <p>{{ t.mesActual }}</p>
     </ion-card-content>
   </ion-card>
 
@@ -23,7 +34,7 @@
       <ion-col size="6">
         <ion-card class="summary-card ingreso-card">
           <ion-card-header>
-            <ion-card-subtitle>Ingresos</ion-card-subtitle>
+            <ion-card-subtitle>{{ t.ingresos }}</ion-card-subtitle>
             <ion-card-title>$ {{ balance.ingresos | number:'1.2-2' }}</ion-card-title>
           </ion-card-header>
           <ion-card-content>
@@ -34,7 +45,7 @@
       <ion-col size="6">
         <ion-card class="summary-card gasto-card">
           <ion-card-header>
-            <ion-card-subtitle>Gastos</ion-card-subtitle>
+            <ion-card-subtitle>{{ t.gastos }}</ion-card-subtitle>
             <ion-card-title>$ {{ balance.gastos | number:'1.2-2' }}</ion-card-title>
           </ion-card-header>
           <ion-card-content>
@@ -48,7 +59,7 @@
   <!-- Tarjeta Movimientos Recientes -->
   <ion-card class="recent-card">
     <ion-card-header>
-      <ion-card-title>Movimientos Recientes</ion-card-title>
+      <ion-card-title>{{ t.movimientosRecientes }}</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <ion-list lines="none">
@@ -59,8 +70,8 @@
             [color]="movimiento.tipo === 'ingreso' ? 'success' : 'danger'">
           </ion-icon>
           <ion-label>
-            <h3>{{ movimiento.descripcion }}</h3>
-            <p>{{ movimiento.categoria }} • {{ movimiento.fecha }}</p>
+            <h3>{{ langService.traducirDescripcion(movimiento.descripcion) }}</h3>
+            <p>{{ langService.traducirCategoria(movimiento.categoria) }} • {{ langService.traducirFecha(movimiento.fecha) }}</p>
           </ion-label>
           <ion-note slot="end" [color]="movimiento.tipo === 'ingreso' ? 'success' : 'danger'">
             {{ movimiento.tipo === 'ingreso' ? '+' : '-' }}$ {{ movimiento.monto | number:'1.2-2' }}
@@ -69,7 +80,7 @@
 
         <ion-item *ngIf="movimientosRecientes.length === 0">
           <ion-label class="ion-text-center">
-            <p>Sin movimientos registrados en la base de datos</p>
+            <p>{{ t.sinMovimientosInicio }}</p>
           </ion-label>
         </ion-item>
       </ion-list>

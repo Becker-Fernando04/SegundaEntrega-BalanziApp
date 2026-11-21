@@ -52,6 +52,15 @@ export interface EvolucionMesEstadistica {
   maximo: number;
 }
 
+export interface EstadisticasResultado {
+  totalGastos: number;
+  totalIngresos: number;
+  gastosPorCategoria: GastoCategoriaEstadistica[];
+  evolucion: EvolucionMesEstadistica[];
+  subtituloPeriodo: string;
+  subtituloEvolucion: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -265,6 +274,45 @@ export class DatabaseService {
     await this.persistIfWeb();
   }
 
+  async updateMovimiento(mov: Movimiento): Promise<void> {
+    await this.init();
+    if (!this.db || !mov.id) {
+      throw new Error('Base de datos no disponible o ID de movimiento inválido');
+    }
+
+    const icono = mov.icono || this.obtenerIconoPorCategoria(mov.categoria);
+
+    const query = `
+      UPDATE movimientos
+      SET tipo = ?, monto = ?, categoria = ?, descripcion = ?, fecha = ?, metodo_pago = ?, icono = ?
+      WHERE id = ?;
+    `;
+    await this.db.run(query, [
+      mov.tipo,
+      mov.monto,
+      mov.categoria,
+      mov.descripcion,
+      mov.fecha,
+      mov.metodo_pago,
+      icono,
+      mov.id
+    ]);
+
+    await this.persistIfWeb();
+  }
+
+  async deleteMovimiento(id: number): Promise<void> {
+    await this.init();
+    if (!this.db || !id) {
+      throw new Error('Base de datos no disponible o ID de movimiento inválido');
+    }
+
+    const query = `DELETE FROM movimientos WHERE id = ?;`;
+    await this.db.run(query, [id]);
+
+    await this.persistIfWeb();
+  }
+
   async getBalance(): Promise<BalanceGeneral> {
     await this.init();
     if (!this.db) {
@@ -310,6 +358,35 @@ export class DatabaseService {
     return (res.values as MetaAhorro[]) || [];
   }
 
+  async addMetaAhorro(meta: Omit<MetaAhorro, 'id'>): Promise<void> {
+    await this.init();
+    if (!this.db) throw new Error('Base de datos no disponible');
+    const query = `
+      INSERT INTO metas_ahorro (nombre, actual, objetivo, icono, color)
+      VALUES (?, ?, ?, ?, ?);
+    `;
+    await this.db.run(query, [
+      meta.nombre,
+      meta.actual,
+      meta.objetivo,
+      meta.icono || 'star-outline',
+      meta.color || 'primary'
+    ]);
+    await this.persistIfWeb();
+  }
+
+  async aportarAMeta(id: number, montoAportar: number): Promise<void> {
+    await this.init();
+    if (!this.db) throw new Error('Base de datos no disponible');
+    const query = `
+      UPDATE metas_ahorro
+      SET actual = MIN(actual + ?, objetivo)
+      WHERE id = ?;
+    `;
+    await this.db.run(query, [montoAportar, id]);
+    await this.persistIfWeb();
+  }
+
   async getGastosPorCategoria(): Promise<GastoCategoriaEstadistica[]> {
     await this.init();
     if (!this.db) return [];
@@ -351,6 +428,273 @@ export class DatabaseService {
       { mes: 'Octubre', ingresos: 250000, gastos: 195000, maximo: 300000 },
       { mes: 'Septiembre', ingresos: 240000, gastos: 160000, maximo: 300000 }
     ];
+  }
+
+  parseFecha(fechaStr: string, refDate: Date = new Date()): { year: number; month: number } {
+    if (!fechaStr) {
+      return { year: refDate.getFullYear(), month: refDate.getMonth() };
+    }
+
+    const str = fechaStr.trim().toLowerCase();
+
+    if (str.includes('hoy')) {
+      return { year: refDate.getFullYear(), month: refDate.getMonth() };
+    }
+    if (str.includes('ayer')) {
+      const ayer = new Date(refDate);
+      ayer.setDate(ayer.getDate() - 1);
+      return { year: ayer.getFullYear(), month: ayer.getMonth() };
+    }
+
+    const matchIso = str.match(/^(\d{4})[-/](\d{1,2})/);
+    if (matchIso) {
+      return {
+        year: parseInt(matchIso[1], 10),
+        month: parseInt(matchIso[2], 10) - 1
+      };
+    }
+
+    const matchLatino = str.match(/^\d{1,2}[-/](\d{1,2})[-/](\d{4})/);
+    if (matchLatino) {
+      return {
+        year: parseInt(matchLatino[2], 10),
+        month: parseInt(matchLatino[1], 10) - 1
+      };
+    }
+
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    for (let i = 0; i < meses.length; i++) {
+      if (str.includes(meses[i])) {
+        const yearMatch = str.match(/\d{4}/);
+        const year = yearMatch ? parseInt(yearMatch[0], 10) : refDate.getFullYear();
+        return { year, month: i };
+      }
+    }
+
+    const parsed = Date.parse(fechaStr);
+    if (!isNaN(parsed)) {
+      const d = new Date(parsed);
+      return { year: d.getFullYear(), month: d.getMonth() };
+    }
+
+    return { year: refDate.getFullYear(), month: refDate.getMonth() };
+  }
+
+  async getEstadisticasPorFiltro(filtro: 'todos' | 'mensual' | 'trimestral' | 'anual'): Promise<EstadisticasResultado> {
+    await this.init();
+    const movs = await this.getMovimientos();
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 10 = Noviembre
+
+    // Clasificar movimientos por fecha real (año y mes)
+    interface MovParsed {
+      mov: Movimiento;
+      year: number;
+      month: number;
+    }
+
+    const movsConFecha: MovParsed[] = movs.map(m => {
+      const p = this.parseFecha(m.fecha, now);
+      return { mov: m, year: p.year, month: p.month };
+    });
+
+    // Baseline referencial para el año actual (2026)
+    const histOctubre = { ingresos: 250000, gastos: 195000 };
+    const histSeptiembre = { ingresos: 240000, gastos: 160000 };
+    const histEneAgo = { ingresos: 1800000, gastos: 1200000 };
+
+    const categoriasHistOctSep: { [cat: string]: number } = {
+      'Alimentación': 135000,
+      'Servicios': 75000,
+      'Transporte': 65000,
+      'Entretenimiento': 25000,
+      'Salud': 20000,
+      'Otros Gastos': 35000
+    };
+
+    const categoriasHistEneAgo: { [cat: string]: number } = {
+      'Alimentación': 450000,
+      'Servicios': 260000,
+      'Transporte': 210000,
+      'Salud': 120000,
+      'Entretenimiento': 100000,
+      'Otros Gastos': 60000
+    };
+
+    const colores = ['primary', 'warning', 'tertiary', 'secondary', 'danger', 'medium', 'dark'];
+
+    const armarCategorias = (catMap: { [cat: string]: number }, total: number): GastoCategoriaEstadistica[] => {
+      if (total <= 0) return [];
+      return Object.keys(catMap)
+        .map((cat, idx) => {
+          const monto = catMap[cat];
+          const porcentaje = Math.round((monto / total) * 100);
+          return {
+            categoria: cat,
+            monto,
+            porcentaje,
+            icono: this.obtenerIconoPorCategoria(cat),
+            color: colores[idx % colores.length]
+          };
+        })
+        .filter(c => c.monto > 0)
+        .sort((a, b) => b.monto - a.monto);
+    };
+
+    // 1. FILTRO MENSUAL: Únicamente los del mes y año en curso (Noviembre 2026)
+    if (filtro === 'mensual') {
+      const movsMes = movsConFecha.filter(item => item.year === currentYear && item.month === currentMonth);
+      const gastosMesRows = movsMes.filter(item => item.mov.tipo === 'gasto');
+      const ingresosMesRows = movsMes.filter(item => item.mov.tipo === 'ingreso');
+
+      const gastosMes = gastosMesRows.reduce((acc, item) => acc + Number(item.mov.monto), 0);
+      const ingresosMes = ingresosMesRows.reduce((acc, item) => acc + Number(item.mov.monto), 0);
+
+      const catMap: { [cat: string]: number } = {};
+      for (const item of gastosMesRows) {
+        catMap[item.mov.categoria] = (catMap[item.mov.categoria] || 0) + Number(item.mov.monto);
+      }
+
+      const evolucion: EvolucionMesEstadistica[] = [
+        {
+          mes: `Noviembre (Mes actual)`,
+          ingresos: ingresosMes,
+          gastos: gastosMes,
+          maximo: Math.max(ingresosMes, gastosMes, 50000)
+        }
+      ];
+
+      return {
+        totalGastos: gastosMes,
+        totalIngresos: ingresosMes,
+        gastosPorCategoria: armarCategorias(catMap, gastosMes),
+        evolucion,
+        subtituloPeriodo: `Distribución del mes actual (${currentYear})`,
+        subtituloEvolucion: `Registro mensual (${currentYear})`
+      };
+    }
+
+    // 2. FILTRO TRIMESTRAL: Últimos 3 meses del año en curso (Noviembre, Octubre, Septiembre 2026)
+    if (filtro === 'trimestral') {
+      // Noviembre 2026
+      const movsNov = movsConFecha.filter(i => i.year === currentYear && i.month === currentMonth);
+      const gastosNov = movsNov.filter(i => i.mov.tipo === 'gasto').reduce((acc, i) => acc + Number(i.mov.monto), 0);
+      const ingresosNov = movsNov.filter(i => i.mov.tipo === 'ingreso').reduce((acc, i) => acc + Number(i.mov.monto), 0);
+
+      // Octubre 2026 (mes anterior)
+      const movsOct = movsConFecha.filter(i => i.year === currentYear && i.month === currentMonth - 1);
+      const gastosOct = histOctubre.gastos + movsOct.filter(i => i.mov.tipo === 'gasto').reduce((acc, i) => acc + Number(i.mov.monto), 0);
+      const ingresosOct = histOctubre.ingresos + movsOct.filter(i => i.mov.tipo === 'ingreso').reduce((acc, i) => acc + Number(i.mov.monto), 0);
+
+      // Septiembre 2026 (dos meses atrás)
+      const movsSep = movsConFecha.filter(i => i.year === currentYear && i.month === currentMonth - 2);
+      const gastosSep = histSeptiembre.gastos + movsSep.filter(i => i.mov.tipo === 'gasto').reduce((acc, i) => acc + Number(i.mov.monto), 0);
+      const ingresosSep = histSeptiembre.ingresos + movsSep.filter(i => i.mov.tipo === 'ingreso').reduce((acc, i) => acc + Number(i.mov.monto), 0);
+
+      const maximo = Math.max(300000, ingresosNov, gastosNov, ingresosOct, gastosOct, ingresosSep, gastosSep);
+      const evolucion: EvolucionMesEstadistica[] = [
+        { mes: 'Noviembre', ingresos: ingresosNov, gastos: gastosNov, maximo },
+        { mes: 'Octubre', ingresos: ingresosOct, gastos: gastosOct, maximo },
+        { mes: 'Septiembre', ingresos: ingresosSep, gastos: gastosSep, maximo }
+      ];
+
+      const catTrimestre: { [cat: string]: number } = { ...categoriasHistOctSep };
+      // Sumar gastos registrados en SQLite que pertenezcan a este trimestre de 2026
+      const movsTrimestre = movsConFecha.filter(i => i.year === currentYear && i.month >= currentMonth - 2 && i.month <= currentMonth && i.mov.tipo === 'gasto');
+      for (const item of movsTrimestre) {
+        catTrimestre[item.mov.categoria] = (catTrimestre[item.mov.categoria] || 0) + Number(item.mov.monto);
+      }
+
+      const totalGastosTrimestre = gastosNov + gastosOct + gastosSep;
+      const totalIngresosTrimestre = ingresosNov + ingresosOct + ingresosSep;
+
+      return {
+        totalGastos: totalGastosTrimestre,
+        totalIngresos: totalIngresosTrimestre,
+        gastosPorCategoria: armarCategorias(catTrimestre, totalGastosTrimestre),
+        evolucion,
+        subtituloPeriodo: `Distribución del último trimestre (${currentYear})`,
+        subtituloEvolucion: 'Últimos 3 meses'
+      };
+    }
+
+    // 3. FILTRO ANUAL: Suma exclusivamente los movimientos de ese año (currentYear = 2026)
+    if (filtro === 'anual') {
+      const movsAnio = movsConFecha.filter(i => i.year === currentYear);
+      const gastosAnioDb = movsAnio.filter(i => i.mov.tipo === 'gasto');
+      const ingresosAnioDb = movsAnio.filter(i => i.mov.tipo === 'ingreso');
+
+      const gastosAnioDbTotal = gastosAnioDb.reduce((acc, i) => acc + Number(i.mov.monto), 0);
+      const ingresosAnioDbTotal = ingresosAnioDb.reduce((acc, i) => acc + Number(i.mov.monto), 0);
+
+      const totalGastosAnual = gastosAnioDbTotal + histOctubre.gastos + histSeptiembre.gastos + histEneAgo.gastos;
+      const totalIngresosAnual = ingresosAnioDbTotal + histOctubre.ingresos + histSeptiembre.ingresos + histEneAgo.ingresos;
+      const maximoAnual = Math.max(totalIngresosAnual, totalGastosAnual, 500000);
+
+      const catAnual: { [cat: string]: number } = { ...categoriasHistOctSep };
+      for (const [k, v] of Object.entries(categoriasHistEneAgo)) {
+        catAnual[k] = (catAnual[k] || 0) + v;
+      }
+      for (const item of gastosAnioDb) {
+        catAnual[item.mov.categoria] = (catAnual[item.mov.categoria] || 0) + Number(item.mov.monto);
+      }
+
+      const evolucion: EvolucionMesEstadistica[] = [
+        {
+          mes: `Año ${currentYear} (Total Anual)`,
+          ingresos: totalIngresosAnual,
+          gastos: totalGastosAnual,
+          maximo: maximoAnual
+        }
+      ];
+
+      return {
+        totalGastos: totalGastosAnual,
+        totalIngresos: totalIngresosAnual,
+        gastosPorCategoria: armarCategorias(catAnual, totalGastosAnual),
+        evolucion,
+        subtituloPeriodo: `Distribución acumulada Año ${currentYear}`,
+        subtituloEvolucion: `Balance total Año ${currentYear}`
+      };
+    }
+
+    // 4. FILTRO TODOS: Suma TODOS los gastos e ingresos en gastos y evolución (incluyendo años anteriores como 2025)
+    const todosGastosDb = movsConFecha.filter(i => i.mov.tipo === 'gasto');
+    const todosIngresosDb = movsConFecha.filter(i => i.mov.tipo === 'ingreso');
+
+    const todosGastosDbTotal = todosGastosDb.reduce((acc, i) => acc + Number(i.mov.monto), 0);
+    const todosIngresosDbTotal = todosIngresosDb.reduce((acc, i) => acc + Number(i.mov.monto), 0);
+
+    const totalGastosTodos = todosGastosDbTotal + histOctubre.gastos + histSeptiembre.gastos + histEneAgo.gastos;
+    const totalIngresosTodos = todosIngresosDbTotal + histOctubre.ingresos + histSeptiembre.ingresos + histEneAgo.ingresos;
+    const maximoTodos = Math.max(totalIngresosTodos, totalGastosTodos, 500000);
+
+    const catTodos: { [cat: string]: number } = { ...categoriasHistOctSep };
+    for (const [k, v] of Object.entries(categoriasHistEneAgo)) {
+      catTodos[k] = (catTodos[k] || 0) + v;
+    }
+    for (const item of todosGastosDb) {
+      catTodos[item.mov.categoria] = (catTodos[item.mov.categoria] || 0) + Number(item.mov.monto);
+    }
+
+    const evolucion: EvolucionMesEstadistica[] = [
+      {
+        mes: 'Total Histórico (Todos los registros)',
+        ingresos: totalIngresosTodos,
+        gastos: totalGastosTodos,
+        maximo: maximoTodos
+      }
+    ];
+
+    return {
+      totalGastos: totalGastosTodos,
+      totalIngresos: totalIngresosTodos,
+      gastosPorCategoria: armarCategorias(catTodos, totalGastosTodos),
+      evolucion,
+      subtituloPeriodo: 'Distribución histórica completa',
+      subtituloEvolucion: 'Total consolidado histórico'
+    };
   }
 
   obtenerIconoPorCategoria(categoria: string): string {

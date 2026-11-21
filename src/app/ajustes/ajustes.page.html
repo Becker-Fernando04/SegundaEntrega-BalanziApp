@@ -1,0 +1,95 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/inicio" text="" color="dark"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ t.ajustesTitulo }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <div class="ajustes-contenedor">
+
+    <!-- Sección de Idioma -->
+    <div class="seccion-ajustes">
+      <h2 class="titulo-seccion-ajuste">
+        <ion-icon name="globe-outline" color="primary"></ion-icon>
+        {{ t.seleccionarIdioma }}
+      </h2>
+
+      <ion-card class="tarjeta-ajuste">
+        <ion-card-content>
+          <ion-radio-group [value]="idiomaSeleccionado" (ionChange)="onIdiomaChange($event)">
+
+            <!-- Español -->
+            <ion-item lines="full" class="item-idioma">
+              <span slot="start" class="bandera">🇪🇸</span>
+              <ion-label>
+                <h3>Español</h3>
+                <p>{{ t.configuracionIdiomaEspanol }}</p>
+              </ion-label>
+              <ion-radio slot="end" value="es" color="primary"></ion-radio>
+            </ion-item>
+
+            <!-- Inglés -->
+            <ion-item lines="none" class="item-idioma">
+              <span slot="start" class="bandera">🇺🇸</span>
+              <ion-label>
+                <h3>English</h3>
+                <p>{{ t.configuracionIdiomaIngles }}</p>
+              </ion-label>
+              <ion-radio slot="end" value="en" color="primary"></ion-radio>
+            </ion-item>
+
+          </ion-radio-group>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Sección de Información de la App -->
+    <div class="seccion-ajustes">
+      <h2 class="titulo-seccion-ajuste">
+        <ion-icon name="information-circle-outline" color="primary"></ion-icon>
+        {{ t.infoApp }}
+      </h2>
+
+      <ion-card class="tarjeta-ajuste">
+        <ion-card-content>
+          <ion-list lines="inset">
+
+            <ion-item>
+              <ion-icon name="phone-portrait-outline" slot="start" color="medium"></ion-icon>
+              <ion-label>
+                <h3>{{ t.nombreAplicacion }}</h3>
+                <p>BalanziApp</p>
+              </ion-label>
+              <ion-note slot="end" color="primary">v1.0.0</ion-note>
+            </ion-item>
+
+            <ion-item>
+              <ion-icon name="server-outline" slot="start" color="medium"></ion-icon>
+              <ion-label>
+                <h3>{{ t.motorDb }}</h3>
+                <p>{{ t.baseDatosSQLite }}</p>
+              </ion-label>
+              <ion-badge slot="end" color="success">{{ t.activo }}</ion-badge>
+            </ion-item>
+
+            <ion-item lines="none">
+              <ion-icon name="cloud-done-outline" slot="start" color="medium"></ion-icon>
+              <ion-label>
+                <h3>{{ t.nube }}</h3>
+                <p>{{ t.sincronizacionFirebase }}</p>
+              </ion-label>
+              <ion-badge slot="end" color="primary">{{ t.conectado }}</ion-badge>
+            </ion-item>
+
+          </ion-list>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+  </div>
+
+</ion-content>

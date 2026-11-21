@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DatabaseService } from './services/database.service';
+import { FirebaseService } from './services/firebase.service';
 
 @Component({
   selector: 'app-root',
@@ -8,7 +9,10 @@ import { DatabaseService } from './services/database.service';
   standalone: false,
 })
 export class AppComponent implements OnInit {
-  constructor(private dbService: DatabaseService) {}
+  constructor(
+    private dbService: DatabaseService,
+    private firebaseService: FirebaseService
+  ) {}
 
   async ngOnInit() {
     try {

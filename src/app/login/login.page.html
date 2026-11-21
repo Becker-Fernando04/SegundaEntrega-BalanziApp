@@ -1,0 +1,180 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/inicio" text="" color="dark"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ t.cuentaAcceso }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+
+  <!-- VISTA 1: Usuario ya autenticado -->
+  <div *ngIf="usuarioActual && !requiere2FA" class="perfil-contenedor">
+    <ion-card class="perfil-card">
+      <ion-card-content class="ion-text-center">
+        <div class="avatar-circulo">
+          <ion-icon name="person-circle" color="primary"></ion-icon>
+        </div>
+
+        <h2 class="email-usuario">{{ usuarioActual.email || usuarioActual.displayName || 'Usuario Balanzi' }}</h2>
+        <ion-badge color="success" class="badge-conectado">
+          <ion-icon name="checkmark-circle-outline"></ion-icon> {{ t.conectadoFirebase }}
+        </ion-badge>
+
+        <p class="info-sincronizacion">
+          {{ t.sincronizacionNubeInfo }}
+        </p>
+
+        <div class="acciones-perfil">
+          <ion-button expand="block" shape="round" color="primary" (click)="sincronizarConNube()" [disabled]="cargando">
+            <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+            <ion-icon *ngIf="!cargando" slot="start" name="cloud-upload-outline"></ion-icon>
+            {{ cargando ? t.sincronizando : t.respaldarNube }}
+          </ion-button>
+
+          <ion-button expand="block" shape="round" fill="outline" color="danger" (click)="cerrarSesion()">
+            <ion-icon slot="start" name="log-out-outline"></ion-icon>
+            {{ t.cerrarSesion }}
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- VISTA 2: Paso de verificación 2FA (SMS) -->
+  <div *ngIf="requiere2FA" class="mfa-contenedor">
+    <ion-card class="form-card">
+      <ion-card-header class="ion-text-center">
+        <ion-icon name="shield-checkmark" color="primary" class="icono-2fa"></ion-icon>
+        <ion-card-title>{{ t.verificacionDosPasos }}</ion-card-title>
+        <ion-card-subtitle>{{ t.ingresarCodigoSMS }}</ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <ion-item>
+          <ion-icon name="key-outline" slot="start" color="medium"></ion-icon>
+          <ion-input
+            type="number"
+            [label]="langService.idiomaActual === 'en' ? 'SMS code' : 'Código SMS'"
+            labelPlacement="floating"
+            placeholder="123456"
+            [(ngModel)]="codigo2FA">
+          </ion-input>
+        </ion-item>
+
+        <div class="btn-auth-container">
+          <ion-button expand="block" shape="round" color="primary" size="large" (click)="verificarCodigo2FA()" [disabled]="cargando">
+            <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+            <span *ngIf="!cargando">{{ t.verificarEntrar }}</span>
+          </ion-button>
+
+          <ion-button expand="block" fill="clear" color="medium" (click)="cancelar2FA()">
+            {{ t.cancelar }}
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- VISTA 3: Formulario de Login / Registro Normal -->
+  <div *ngIf="!usuarioActual && !requiere2FA" class="auth-contenedor">
+
+    <!-- Logo de la app -->
+    <div class="logo-cabecera ion-text-center">
+      <h1 class="brand-logo-text">
+        <span class="brand-bold">Balanzi</span><span class="brand-light">App</span>
+      </h1>
+      <p class="subtitulo-auth">
+        {{ modo === 'login' ? t.iniciarSesionGestionar : t.crearCuentaRespaldar }}
+      </p>
+    </div>
+
+    <!-- Botón directo de Google -->
+    <div class="google-contenedor">
+      <ion-button expand="block" shape="round" fill="outline" class="btn-google" (click)="iniciarSesionGoogle()" [disabled]="cargando">
+        <ion-icon slot="start" name="logo-google" color="danger"></ion-icon>
+        {{ t.continuarGoogle }}
+      </ion-button>
+    </div>
+
+    <div class="separador-o">
+      <span>{{ t.usarCorreo }}</span>
+    </div>
+
+    <!-- Selector: Iniciar Sesión / Registrarse -->
+    <ion-segment [(ngModel)]="modo" mode="md" class="auth-segment">
+      <ion-segment-button value="login">
+        <ion-label>{{ t.iniciarSesion }}</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="registro">
+        <ion-label>{{ t.registrarse }}</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+
+    <!-- Tarjeta con inputs de correo y contraseña -->
+    <ion-card class="form-card">
+      <ion-card-content>
+        <ion-list lines="inset">
+
+          <!-- Correo -->
+          <ion-item>
+            <ion-icon name="mail-outline" slot="start" color="medium"></ion-icon>
+            <ion-input
+              type="email"
+              [label]="t.correoElectronico"
+              labelPlacement="floating"
+              [placeholder]="t.ejemploCorreo"
+              [(ngModel)]="email">
+            </ion-input>
+          </ion-item>
+
+          <!-- Contraseña -->
+          <ion-item>
+            <ion-icon name="lock-closed-outline" slot="start" color="medium"></ion-icon>
+            <ion-input
+              type="password"
+              [label]="t.contrasena"
+              labelPlacement="floating"
+              placeholder="••••••••"
+              [(ngModel)]="password">
+            </ion-input>
+          </ion-item>
+
+          <!-- Confirmar Contraseña (solo en registro) -->
+          <ion-item *ngIf="modo === 'registro'">
+            <ion-icon name="shield-checkmark-outline" slot="start" color="medium"></ion-icon>
+            <ion-input
+              type="password"
+              [label]="t.confirmarContrasena"
+              labelPlacement="floating"
+              placeholder="••••••••"
+              [(ngModel)]="confirmPassword">
+            </ion-input>
+          </ion-item>
+
+        </ion-list>
+
+        <!-- Botón de acción -->
+        <div class="btn-auth-container">
+          <ion-button expand="block" shape="round" color="primary" size="large" (click)="procesarAccion()" [disabled]="cargando">
+            <ion-spinner *ngIf="cargando" name="crescent"></ion-spinner>
+            <span *ngIf="!cargando">{{ modo === 'login' ? t.entrarConCorreo : t.crearCuenta }}</span>
+          </ion-button>
+        </div>
+
+      </ion-card-content>
+    </ion-card>
+
+    <div class="pie-info ion-text-center">
+      <p>
+        <ion-icon name="shield-outline"></ion-icon> {{ t.seguridadFirebase }}
+      </p>
+    </div>
+
+  </div>
+
+  <!-- Contenedor invisible para Recaptcha 2FA si se requiere -->
+  <div id="recaptcha-container"></div>
+
+</ion-content>

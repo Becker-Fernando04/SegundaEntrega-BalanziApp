@@ -1,4 +1,4 @@
-package io.ionic.starter;
+package com.balanzi.app;
 
 import com.getcapacitor.BridgeActivity;
 

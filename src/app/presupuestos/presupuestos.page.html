@@ -1,34 +1,45 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar>
-    <ion-title>BalanziApp</ion-title>
-  </ion-toolbar>
+<ion-header class="ion-no-border app-header">
+  <div class="top-actions-bar">
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/login">
+      <ion-icon slot="icon-only" name="person-circle-outline"></ion-icon>
+    </ion-button>
+    <ion-button fill="clear" class="header-icon-btn" routerLink="/ajustes">
+      <ion-icon slot="icon-only" name="settings-outline"></ion-icon>
+    </ion-button>
+  </div>
+
+  <div class="brand-title-container">
+    <h1 class="brand-logo-text">
+      <span class="brand-bold">Balanzi</span><span class="brand-light">App</span>
+    </h1>
+  </div>
 </ion-header>
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
   <!-- Sección: Presupuestos Activos (1 tarjeta) -->
   <section class="seccion-bloque">
-    <h2 class="titulo-seccion">Presupuestos activos</h2>
+    <h2 class="titulo-seccion">{{ t.presupuestosActivos }}</h2>
 
     <ion-card class="tarjeta-presupuesto-principal">
       <ion-card-header>
         <div class="header-fila">
           <div>
-            <ion-card-subtitle>Presupuesto Mensual</ion-card-subtitle>
-            <ion-card-title>{{ presupuestoActivo.nombre }}</ion-card-title>
+            <ion-card-subtitle>{{ t.presupuestoMensual }}</ion-card-subtitle>
+            <ion-card-title>{{ langService.traducirMes(presupuestoActivo.nombre) }}</ion-card-title>
           </div>
-          <ion-badge color="success" class="badge-estado">En curso</ion-badge>
+          <ion-badge color="success" class="badge-estado">{{ t.presupuestoEstado }}</ion-badge>
         </div>
       </ion-card-header>
 
       <ion-card-content>
         <div class="montos-fila">
           <div class="monto-item">
-            <span class="monto-label">Gastado</span>
+            <span class="monto-label">{{ t.gastado }}</span>
             <span class="monto-valor gastado">$ {{ presupuestoActivo.gastado | number:'1.2-2' }}</span>
           </div>
           <div class="monto-item align-right">
-            <span class="monto-label">Límite Total</span>
+            <span class="monto-label">{{ t.limiteTotal }}</span>
             <span class="monto-valor">$ {{ presupuestoActivo.total | number:'1.2-2' }}</span>
           </div>
         </div>
@@ -39,8 +50,8 @@
         </ion-progress-bar>
 
         <div class="resumen-pie">
-          <p>Disponible: <strong>$ {{ (presupuestoActivo.total - presupuestoActivo.gastado) | number:'1.2-2' }}</strong></p>
-          <p>{{ ((presupuestoActivo.gastado / presupuestoActivo.total) * 100) | number:'1.0-0' }}% utilizado</p>
+          <p>{{ t.disponible }}: <strong>$ {{ (presupuestoActivo.total - presupuestoActivo.gastado) | number:'1.2-2' }}</strong></p>
+          <p>{{ ((presupuestoActivo.gastado / presupuestoActivo.total) * 100) | number:'1.0-0' }}% {{ t.utilizado }}</p>
         </div>
       </ion-card-content>
     </ion-card>
@@ -48,7 +59,7 @@
 
   <!-- Sección: Metas de Ahorro (2 tarjetas una al lado de la otra) -->
   <section class="seccion-bloque">
-    <h2 class="titulo-seccion">Metas de ahorro</h2>
+    <h2 class="titulo-seccion">{{ t.metasAhorro }}</h2>
 
     <ion-grid class="grid-metas">
       <ion-row>
@@ -59,9 +70,9 @@
                 <ion-icon [name]="meta.icono" [color]="meta.color"></ion-icon>
               </div>
 
-              <h3 class="meta-titulo">{{ meta.nombre }}</h3>
+              <h3 class="meta-titulo">{{ langService.traducirNombreMeta(meta.nombre) }}</h3>
               <p class="meta-monto-actual">$ {{ meta.actual | number:'1.0-0' }}</p>
-              <p class="meta-monto-objetivo">Meta: $ {{ meta.objetivo | number:'1.0-0' }}</p>
+              <p class="meta-monto-objetivo">{{ t.meta }}: $ {{ meta.objetivo | number:'1.0-0' }}</p>
 
               <ion-progress-bar
                 [value]="meta.actual / meta.objetivo"

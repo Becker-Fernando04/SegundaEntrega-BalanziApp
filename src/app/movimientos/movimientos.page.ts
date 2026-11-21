@@ -1,5 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angular/core';
+import { AlertController, ToastController } from '@ionic/angular';
 import { DatabaseService, Movimiento } from '../services/database.service';
+import { LanguageService, Traducciones } from '../services/language.service';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -13,10 +15,59 @@ export class MovimientosPage implements OnInit, OnDestroy {
   busqueda: string = '';
   filtroSeleccionado: string = 'todos';
   todosLosMovimientos: Movimiento[] = [];
+
+  // Estado del modal de edición
+  isModalEdicionOpen: boolean = false;
+  movimientoEnEdicion: Movimiento | null = null;
+  editTipo: 'gasto' | 'ingreso' = 'gasto';
+  editMonto: number | null = null;
+  editCategoria: string = '';
+  editDescripcion: string = '';
+  editFecha: string = '';
+  editMetodoPago: string = '';
+
+  categoriasGasto: string[] = [
+    'Alimentación',
+    'Transporte',
+    'Servicios',
+    'Entretenimiento',
+    'Salud',
+    'Educación',
+    'Otros Gastos'
+  ];
+
+  categoriasIngreso: string[] = [
+    'Salario',
+    'Honorarios',
+    'Ventas',
+    'Inversiones',
+    'Transferencias',
+    'Otros Ingresos'
+  ];
+
+  metodosPago: string[] = [
+    'Efectivo',
+    'Tarjeta de Débito',
+    'Tarjeta de Crédito',
+    'Transferencia Bancaria',
+    'Billetera Virtual'
+  ];
+
+  get categoriasDisponibles(): string[] {
+    return this.editTipo === 'gasto' ? this.categoriasGasto : this.categoriasIngreso;
+  }
+
+  get t(): Traducciones {
+    return this.langService.t;
+  }
+
   private subs: Subscription = new Subscription();
 
   constructor(
     private dbService: DatabaseService,
+    public langService: LanguageService,
+    private alertController: AlertController,
+    private toastController: ToastController,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) { }
@@ -33,6 +84,12 @@ export class MovimientosPage implements OnInit, OnDestroy {
     this.subs.add(
       this.dbService.dataChanged$.subscribe(() => {
         this.cargarMovimientos();
+      })
+    );
+
+    this.subs.add(
+      this.langService.idiomaActual$.subscribe(() => {
+        this.cdr.detectChanges();
       })
     );
   }
@@ -66,7 +123,8 @@ export class MovimientosPage implements OnInit, OnDestroy {
       const q = this.busqueda.toLowerCase().trim();
       list = list.filter(m =>
         m.descripcion.toLowerCase().includes(q) ||
-        m.categoria.toLowerCase().includes(q)
+        m.categoria.toLowerCase().includes(q) ||
+        (m.fecha && m.fecha.toLowerCase().includes(q))
       );
     }
 
@@ -79,6 +137,125 @@ export class MovimientosPage implements OnInit, OnDestroy {
 
   get movimientosAnteriores(): Movimiento[] {
     return this.movimientosFiltrados.slice(3);
+  }
+
+  // --- MODIFICACIÓN DE MOVIMIENTO ---
+
+  abrirModalEditar(item: Movimiento) {
+    this.movimientoEnEdicion = { ...item };
+    this.editTipo = item.tipo;
+    this.editMonto = item.monto;
+    this.editCategoria = item.categoria;
+    this.editDescripcion = item.descripcion;
+    this.editMetodoPago = item.metodo_pago || 'Efectivo';
+
+    // Normalizar fecha al formato ISO YYYY-MM-DD para el input type="date"
+    let fechaNorm = item.fecha || '';
+    if (!fechaNorm.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const p = this.dbService.parseFecha(item.fecha);
+      const mStr = String(p.month + 1).padStart(2, '0');
+      fechaNorm = `${p.year}-${mStr}-15`;
+    }
+    this.editFecha = fechaNorm;
+
+    this.isModalEdicionOpen = true;
+  }
+
+  cerrarModalEditar() {
+    this.isModalEdicionOpen = false;
+    this.movimientoEnEdicion = null;
+  }
+
+  onTipoEditChange() {
+    // Si cambia de gasto a ingreso o viceversa, asegurar que la categoría pertenezca a la nueva lista
+    if (!this.categoriasDisponibles.includes(this.editCategoria)) {
+      this.editCategoria = this.categoriasDisponibles[0] || '';
+    }
+  }
+
+  async guardarEdicion() {
+    if (!this.movimientoEnEdicion || !this.movimientoEnEdicion.id) {
+      await this.mostrarToast(this.t.movimientoNoEncontrado, 'danger');
+      return;
+    }
+
+    if (!this.editMonto || this.editMonto <= 0) {
+      await this.mostrarToast(this.t.montoInvalido, 'warning');
+      return;
+    }
+
+    if (!this.editCategoria) {
+      await this.mostrarToast(this.t.seleccionarCategoriaMensaje, 'warning');
+      return;
+    }
+
+    const desc = this.editDescripcion.trim() || this.editCategoria;
+    const metodo = this.editMetodoPago || 'Efectivo';
+
+    try {
+      await this.dbService.updateMovimiento({
+        id: this.movimientoEnEdicion.id,
+        tipo: this.editTipo,
+        monto: Number(this.editMonto),
+        categoria: this.editCategoria,
+        descripcion: desc,
+        fecha: this.editFecha,
+        metodo_pago: metodo
+      });
+
+      this.cerrarModalEditar();
+      await this.mostrarToast(this.t.movimientoActualizado, 'success');
+    } catch (error: any) {
+      console.error('Error al actualizar movimiento en SQLite:', error);
+      await this.mostrarToast(`${this.t.errorActualizar} ${error?.message || error}`, 'danger');
+    }
+  }
+
+  // --- ELIMINACIÓN DE MOVIMIENTO ---
+
+  async confirmarEliminar(item: Movimiento) {
+    const alert = await this.alertController.create({
+      header: this.t.eliminarMovimientoTitulo,
+      subHeader: `${this.langService.traducirDescripcion(item.descripcion)} ($ ${item.monto})`,
+      message: this.t.confirmarEliminarMovimiento,
+      buttons: [
+        {
+          text: this.t.cancelar,
+          role: 'cancel'
+        },
+        {
+          text: this.t.eliminar,
+          role: 'destructive',
+          handler: async () => {
+            if (item.id) {
+              await this.eliminarMovimiento(item.id);
+            }
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  async eliminarMovimiento(id: number) {
+    try {
+      await this.dbService.deleteMovimiento(id);
+      await this.mostrarToast(this.t.movimientoEliminado, 'success');
+    } catch (error: any) {
+      console.error('Error al eliminar movimiento de SQLite:', error);
+      await this.mostrarToast(this.t.errorEliminarMovimiento, 'danger');
+    }
+  }
+
+  private async mostrarToast(mensaje: string, color: 'success' | 'warning' | 'danger') {
+    const toast = await this.toastController.create({
+      message: mensaje,
+      duration: 2500,
+      position: 'bottom',
+      color: color
+    });
+    await toast.present();
   }
 
 }
