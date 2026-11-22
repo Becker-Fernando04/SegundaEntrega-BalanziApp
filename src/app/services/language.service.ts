@@ -27,7 +27,9 @@ export interface Traducciones {
   filtroTodos: string;
   filtroIngresos: string;
   filtroGastos: string;
-  filtroCategorias: string;
+  filtrarPorCategoria: string;
+  todasLasCategorias: string;
+  aplicar: string;
   historialAnterior: string;
   tipoGasto: string;
   tipoIngreso: string;
@@ -47,8 +49,16 @@ export interface Traducciones {
   total: string;
   evolucionMensual: string;
   comparativa: string;
+  ingresosPorCategoria: string;
+  sinIngresosCategoriaPeriodo: string;
   presupuestosActivos: string;
   presupuestoMensual: string;
+  presupuestoTrimestral: string;
+  presupuestoAnual: string;
+  tipoPeriodoPresupuesto: string;
+  presupuestoGuardado: string;
+  montoPresupuestoInvalido: string;
+  errorGuardarPresupuesto: string;
   enCurso: string;
   gastado: string;
   limiteTotal: string;
@@ -62,6 +72,11 @@ export interface Traducciones {
   seleccionarMetaAhorro: string;
   metasAhorroTitulo: string;
   montoAportar: string;
+  editarTopeMeta: string;
+  topeMetaActualizado: string;
+  errorActualizarTopeMeta: string;
+  agregarIngresoMeta: string;
+  aporteSuperaLimiteMeta: string;
   elegirMeta: string;
   sinMetasAhorro: string;
   cancelarNuevaMeta: string;
@@ -185,7 +200,9 @@ const ES: Traducciones = {
   filtroTodos: 'Todos',
   filtroIngresos: 'Ingresos',
   filtroGastos: 'Gastos',
-  filtroCategorias: 'Categorías',
+  filtrarPorCategoria: 'Filtrar por categoría',
+  todasLasCategorias: 'Todas las categorías',
+  aplicar: 'Aplicar',
   historialAnterior: 'Historial Anterior',
   tipoGasto: 'Gasto',
   tipoIngreso: 'Ingreso',
@@ -205,8 +222,16 @@ const ES: Traducciones = {
   total: 'Total',
   evolucionMensual: 'Evolución mensual',
   comparativa: 'Comparativa Ingresos vs Gastos',
+  ingresosPorCategoria: 'Ingresos por categoría',
+  sinIngresosCategoriaPeriodo: 'No hay ingresos registrados para este período.',
   presupuestosActivos: 'Presupuestos activos',
   presupuestoMensual: 'Presupuesto Mensual',
+  presupuestoTrimestral: 'Presupuesto Trimestral',
+  presupuestoAnual: 'Presupuesto Anual',
+  tipoPeriodoPresupuesto: 'Período del presupuesto',
+  presupuestoGuardado: 'Presupuesto actualizado correctamente',
+  montoPresupuestoInvalido: 'Ingresa un monto mayor a cero.',
+  errorGuardarPresupuesto: 'No se pudo actualizar el presupuesto.',
   enCurso: 'En curso',
   gastado: 'Gastado',
   limiteTotal: 'Límite Total',
@@ -220,6 +245,11 @@ const ES: Traducciones = {
   seleccionarMetaAhorro: 'Seleccionar Meta de Ahorro',
   metasAhorroTitulo: 'Metas de Ahorro',
   montoAportar: 'Monto a aportar:',
+  editarTopeMeta: 'Editar tope',
+  topeMetaActualizado: 'Objetivo actualizado correctamente.',
+  errorActualizarTopeMeta: 'No se pudo actualizar el objetivo de la meta.',
+  agregarIngresoMeta: 'Agregar ingreso',
+  aporteSuperaLimiteMeta: 'El aporte supera el monto restante de la meta.',
   elegirMeta: 'Elegí una meta',
   sinMetasAhorro: 'No tenés metas de ahorro aún.',
   cancelarNuevaMeta: 'Cancelar nueva meta',
@@ -343,7 +373,9 @@ const EN: Traducciones = {
   filtroTodos: 'All',
   filtroIngresos: 'Income',
   filtroGastos: 'Expenses',
-  filtroCategorias: 'Categories',
+  filtrarPorCategoria: 'Filter by category',
+  todasLasCategorias: 'All categories',
+  aplicar: 'Apply',
   historialAnterior: 'Previous History',
   tipoGasto: 'Expense',
   tipoIngreso: 'Income',
@@ -363,8 +395,16 @@ const EN: Traducciones = {
   total: 'Total',
   evolucionMensual: 'Monthly overview',
   comparativa: 'Income vs Expenses comparison',
+  ingresosPorCategoria: 'Income by category',
+  sinIngresosCategoriaPeriodo: 'No income recorded for this period.',
   presupuestosActivos: 'Active budgets',
   presupuestoMensual: 'Monthly Budget',
+  presupuestoTrimestral: 'Quarterly Budget',
+  presupuestoAnual: 'Annual Budget',
+  tipoPeriodoPresupuesto: 'Budget period',
+  presupuestoGuardado: 'Budget updated successfully',
+  montoPresupuestoInvalido: 'Enter an amount greater than zero.',
+  errorGuardarPresupuesto: 'The budget could not be updated.',
   enCurso: 'Active',
   gastado: 'Spent',
   limiteTotal: 'Total Limit',
@@ -378,6 +418,11 @@ const EN: Traducciones = {
   seleccionarMetaAhorro: 'Select Savings Goal',
   metasAhorroTitulo: 'Savings Goals',
   montoAportar: 'Contribution amount:',
+  editarTopeMeta: 'Edit target',
+  topeMetaActualizado: 'Goal target updated successfully.',
+  errorActualizarTopeMeta: 'The savings goal target could not be updated.',
+  agregarIngresoMeta: 'Add income',
+  aporteSuperaLimiteMeta: 'The contribution exceeds the remaining goal amount.',
   elegirMeta: 'Choose a goal',
   sinMetasAhorro: 'You do not have any savings goals yet.',
   cancelarNuevaMeta: 'Cancel new goal',

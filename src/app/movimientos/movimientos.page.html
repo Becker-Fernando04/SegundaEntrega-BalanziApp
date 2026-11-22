@@ -24,19 +24,16 @@
     show-clear-button="focus">
   </ion-searchbar>
 
-  <!-- Botonera: Todos, Ingresos, Gastos, Categorías -->
+  <!-- Botonera: Todos, Ingresos, Gastos -->
   <ion-segment [(ngModel)]="filtroSeleccionado" mode="md" class="botonera-segment">
-    <ion-segment-button value="todos">
+    <ion-segment-button value="todos" (click)="seleccionarFiltro('todos')">
       <ion-label>{{ t.filtroTodos }}</ion-label>
     </ion-segment-button>
-    <ion-segment-button value="ingresos">
+    <ion-segment-button value="ingresos" (click)="seleccionarFiltro('ingresos')">
       <ion-label>{{ t.filtroIngresos }}</ion-label>
     </ion-segment-button>
-    <ion-segment-button value="gastos">
+    <ion-segment-button value="gastos" (click)="seleccionarFiltro('gastos')">
       <ion-label>{{ t.filtroGastos }}</ion-label>
-    </ion-segment-button>
-    <ion-segment-button value="categorias">
-      <ion-label>{{ t.filtroCategorias }}</ion-label>
     </ion-segment-button>
   </ion-segment>
 

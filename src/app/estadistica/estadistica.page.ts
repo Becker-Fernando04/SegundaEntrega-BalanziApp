@@ -17,6 +17,7 @@ export class EstadisticaPage implements OnInit, OnDestroy {
   subtituloPeriodo: string = 'Distribución del período';
   subtituloEvolucion: string = 'Comparativa Ingresos vs Gastos';
   gastosPorCategoria: GastoCategoriaEstadistica[] = [];
+  ingresosPorCategoria: GastoCategoriaEstadistica[] = [];
   evolucionMensual: EvolucionMesEstadistica[] = [];
 
   private subs: Subscription = new Subscription();
@@ -45,6 +46,10 @@ export class EstadisticaPage implements OnInit, OnDestroy {
     }
     if (this.filtroEstadistica === 'trimestral') return this.t.estadisticaEvolucionTrimestre;
     return this.t.estadisticaEvolucionTodo;
+  }
+
+  get totalIngresosPorCategoria(): number {
+    return this.ingresosPorCategoria.reduce((total, item) => total + item.monto, 0);
   }
 
   constructor(
@@ -99,6 +104,7 @@ export class EstadisticaPage implements OnInit, OnDestroy {
         this.totalGastos = data.totalGastos;
         this.totalIngresos = data.totalIngresos;
         this.gastosPorCategoria = data.gastosPorCategoria;
+        this.ingresosPorCategoria = data.ingresosPorCategoria;
         this.evolucionMensual = data.evolucion;
         this.subtituloPeriodo = data.subtituloPeriodo;
         this.subtituloEvolucion = data.subtituloEvolucion;

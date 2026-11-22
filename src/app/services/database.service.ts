@@ -20,6 +20,10 @@ export interface Presupuesto {
   mes: string;
   total: number;
   gastado: number;
+  periodo: 'mensual' | 'trimestral' | 'anual';
+  totalMensual: number;
+  totalTrimestral: number;
+  totalAnual: number;
 }
 
 export interface MetaAhorro {
@@ -56,6 +60,7 @@ export interface EstadisticasResultado {
   totalGastos: number;
   totalIngresos: number;
   gastosPorCategoria: GastoCategoriaEstadistica[];
+  ingresosPorCategoria: GastoCategoriaEstadistica[];
   evolucion: EvolucionMesEstadistica[];
   subtituloPeriodo: string;
   subtituloEvolucion: string;
@@ -163,7 +168,11 @@ export class DatabaseService {
         nombre TEXT NOT NULL,
         mes TEXT NOT NULL,
         total REAL NOT NULL,
-        gastado REAL NOT NULL
+        gastado REAL NOT NULL,
+        periodo TEXT NOT NULL DEFAULT 'mensual',
+        total_mensual REAL NOT NULL DEFAULT 0,
+        total_trimestral REAL NOT NULL DEFAULT 0,
+        total_anual REAL NOT NULL DEFAULT 0
       );
 
       CREATE TABLE IF NOT EXISTS metas_ahorro (
@@ -177,6 +186,30 @@ export class DatabaseService {
     `;
 
     await this.db.execute(schema);
+
+    const presupuestoColumns = await this.db.query('PRAGMA table_info(presupuestos);');
+    const nombresColumnas = new Set(presupuestoColumns.values?.map(column => column.name) || []);
+    const columnasPresupuesto = [
+      { nombre: 'periodo', definicion: "TEXT NOT NULL DEFAULT 'mensual'" },
+      { nombre: 'total_mensual', definicion: 'REAL NOT NULL DEFAULT 0' },
+      { nombre: 'total_trimestral', definicion: 'REAL NOT NULL DEFAULT 0' },
+      { nombre: 'total_anual', definicion: 'REAL NOT NULL DEFAULT 0' }
+    ];
+
+    for (const columna of columnasPresupuesto) {
+      if (!nombresColumnas.has(columna.nombre)) {
+        await this.db.execute(
+          `ALTER TABLE presupuestos ADD COLUMN ${columna.nombre} ${columna.definicion};`
+        );
+      }
+    }
+
+    await this.db.execute(`
+      UPDATE presupuestos
+      SET total_mensual = CASE WHEN total_mensual = 0 THEN total ELSE total_mensual END,
+          total_trimestral = CASE WHEN total_trimestral = 0 THEN total ELSE total_trimestral END,
+          total_anual = CASE WHEN total_anual = 0 THEN total ELSE total_anual END;
+    `);
   }
 
   private async seedInitialData(): Promise<void> {
@@ -202,8 +235,10 @@ export class DatabaseService {
 
     if (countPresupuesto === 0) {
       const initialPresupuesto = `
-        INSERT INTO presupuestos (nombre, mes, total, gastado)
-        VALUES ('Noviembre 2026', 'Noviembre', 200000, 23750);
+        INSERT INTO presupuestos (
+          nombre, mes, total, gastado, periodo, total_mensual, total_trimestral, total_anual
+        )
+        VALUES ('Noviembre 2026', 'Noviembre', 200000, 23750, 'mensual', 200000, 200000, 200000);
       `;
       await this.db.execute(initialPresupuesto);
     }
@@ -335,20 +370,83 @@ export class DatabaseService {
   async getPresupuestoActivo(): Promise<Presupuesto> {
     await this.init();
     if (!this.db) {
-      return { nombre: 'Noviembre 2026', mes: 'Noviembre', total: 200000, gastado: 0 };
+      return {
+        nombre: 'Noviembre 2026',
+        mes: 'Noviembre',
+        total: 200000,
+        gastado: 0,
+        periodo: 'mensual',
+        totalMensual: 200000,
+        totalTrimestral: 200000,
+        totalAnual: 200000
+      };
     }
     const res = await this.db.query('SELECT * FROM presupuestos ORDER BY id DESC LIMIT 1;');
     const resGastos = await this.db.query("SELECT COALESCE(SUM(monto), 0) as total FROM movimientos WHERE tipo = 'gasto';");
     const totalGastos = resGastos.values && resGastos.values[0] ? Number(resGastos.values[0].total) : 0;
 
     if (res.values && res.values.length > 0) {
-      const pres = res.values[0] as Presupuesto;
+      const pres = res.values[0];
+      const periodoGuardado = String(pres.periodo);
+      const periodo: Presupuesto['periodo'] = periodoGuardado === 'trimestral' || periodoGuardado === 'anual'
+        ? periodoGuardado
+        : 'mensual';
+      const totalMensual = Number(pres.total_mensual);
+      const totalTrimestral = Number(pres.total_trimestral);
+      const totalAnual = Number(pres.total_anual);
       return {
-        ...pres,
-        gastado: totalGastos
+        id: Number(pres.id),
+        nombre: String(pres.nombre),
+        mes: String(pres.mes),
+        total: periodo === 'trimestral'
+          ? totalTrimestral
+          : periodo === 'anual' ? totalAnual : totalMensual,
+        gastado: totalGastos,
+        periodo,
+        totalMensual,
+        totalTrimestral,
+        totalAnual
       };
     }
-    return { nombre: 'Noviembre 2026', mes: 'Noviembre', total: 200000, gastado: totalGastos };
+    return {
+      nombre: 'Noviembre 2026',
+      mes: 'Noviembre',
+      total: 200000,
+      gastado: totalGastos,
+      periodo: 'mensual',
+      totalMensual: 200000,
+      totalTrimestral: 200000,
+      totalAnual: 200000
+    };
+  }
+
+  async updatePresupuestoActivo(
+    total: number,
+    periodo: Presupuesto['periodo']
+  ): Promise<void> {
+    await this.init();
+    if (!this.db) throw new Error('Base de datos no disponible');
+    if (!Number.isFinite(total) || total <= 0) {
+      throw new Error('El monto del presupuesto debe ser mayor a cero');
+    }
+
+    const columnasPorPeriodo: Record<Presupuesto['periodo'], string> = {
+      mensual: 'total_mensual',
+      trimestral: 'total_trimestral',
+      anual: 'total_anual'
+    };
+    const columna = columnasPorPeriodo[periodo];
+    if (!columna) throw new Error('Período de presupuesto inválido');
+
+    const res = await this.db.query('SELECT id FROM presupuestos ORDER BY id DESC LIMIT 1;');
+    const id = res.values?.[0]?.id;
+    if (id === undefined) throw new Error('No hay un presupuesto activo para actualizar');
+
+    await this.db.run(
+      `UPDATE presupuestos SET total = ?, periodo = ?, ${columna} = ? WHERE id = ?;`,
+      [total, periodo, total, id]
+    );
+    await this.persistIfWeb();
   }
 
   async getMetasAhorro(): Promise<MetaAhorro[]> {
@@ -372,6 +470,20 @@ export class DatabaseService {
       meta.icono || 'star-outline',
       meta.color || 'primary'
     ]);
+    await this.persistIfWeb();
+  }
+
+  async updateMetaAhorro(id: number, objetivo: number): Promise<void> {
+    await this.init();
+    if (!this.db || !id) throw new Error('Base de datos no disponible o ID de meta inválido');
+    if (!Number.isFinite(objetivo) || objetivo <= 0) {
+      throw new Error('El objetivo de la meta debe ser mayor a cero');
+    }
+
+    await this.db.run(
+      'UPDATE metas_ahorro SET objetivo = ? WHERE id = ?;',
+      [objetivo, id]
+    );
     await this.persistIfWeb();
   }
 
@@ -542,6 +654,15 @@ export class DatabaseService {
         .sort((a, b) => b.monto - a.monto);
     };
 
+    const agruparPorCategoria = (movimientos: Movimiento[]): Record<string, number> => {
+      const categorias: Record<string, number> = {};
+      for (const movimiento of movimientos) {
+        categorias[movimiento.categoria] =
+          (categorias[movimiento.categoria] || 0) + Number(movimiento.monto);
+      }
+      return categorias;
+    };
+
     // 1. FILTRO MENSUAL: Únicamente los del mes y año en curso (Noviembre 2026)
     if (filtro === 'mensual') {
       const movsMes = movsConFecha.filter(item => item.year === currentYear && item.month === currentMonth);
@@ -555,6 +676,7 @@ export class DatabaseService {
       for (const item of gastosMesRows) {
         catMap[item.mov.categoria] = (catMap[item.mov.categoria] || 0) + Number(item.mov.monto);
       }
+      const catIngresosMes = agruparPorCategoria(ingresosMesRows.map(item => item.mov));
 
       const evolucion: EvolucionMesEstadistica[] = [
         {
@@ -569,6 +691,7 @@ export class DatabaseService {
         totalGastos: gastosMes,
         totalIngresos: ingresosMes,
         gastosPorCategoria: armarCategorias(catMap, gastosMes),
+        ingresosPorCategoria: armarCategorias(catIngresosMes, ingresosMes),
         evolucion,
         subtituloPeriodo: `Distribución del mes actual (${currentYear})`,
         subtituloEvolucion: `Registro mensual (${currentYear})`
@@ -605,6 +728,11 @@ export class DatabaseService {
       for (const item of movsTrimestre) {
         catTrimestre[item.mov.categoria] = (catTrimestre[item.mov.categoria] || 0) + Number(item.mov.monto);
       }
+      const movsIngresoTrimestre = movsConFecha
+        .filter(i => i.year === currentYear && i.month >= currentMonth - 2 && i.month <= currentMonth && i.mov.tipo === 'ingreso')
+        .map(item => item.mov);
+      const totalIngresosRegistradosTrimestre = movsIngresoTrimestre
+        .reduce((acc, movimiento) => acc + Number(movimiento.monto), 0);
 
       const totalGastosTrimestre = gastosNov + gastosOct + gastosSep;
       const totalIngresosTrimestre = ingresosNov + ingresosOct + ingresosSep;
@@ -613,6 +741,10 @@ export class DatabaseService {
         totalGastos: totalGastosTrimestre,
         totalIngresos: totalIngresosTrimestre,
         gastosPorCategoria: armarCategorias(catTrimestre, totalGastosTrimestre),
+        ingresosPorCategoria: armarCategorias(
+          agruparPorCategoria(movsIngresoTrimestre),
+          totalIngresosRegistradosTrimestre
+        ),
         evolucion,
         subtituloPeriodo: `Distribución del último trimestre (${currentYear})`,
         subtituloEvolucion: 'Últimos 3 meses'
@@ -627,6 +759,7 @@ export class DatabaseService {
 
       const gastosAnioDbTotal = gastosAnioDb.reduce((acc, i) => acc + Number(i.mov.monto), 0);
       const ingresosAnioDbTotal = ingresosAnioDb.reduce((acc, i) => acc + Number(i.mov.monto), 0);
+      const ingresosAnioCategoria = agruparPorCategoria(ingresosAnioDb.map(item => item.mov));
 
       const totalGastosAnual = gastosAnioDbTotal + histOctubre.gastos + histSeptiembre.gastos + histEneAgo.gastos;
       const totalIngresosAnual = ingresosAnioDbTotal + histOctubre.ingresos + histSeptiembre.ingresos + histEneAgo.ingresos;
@@ -653,6 +786,7 @@ export class DatabaseService {
         totalGastos: totalGastosAnual,
         totalIngresos: totalIngresosAnual,
         gastosPorCategoria: armarCategorias(catAnual, totalGastosAnual),
+        ingresosPorCategoria: armarCategorias(ingresosAnioCategoria, ingresosAnioDbTotal),
         evolucion,
         subtituloPeriodo: `Distribución acumulada Año ${currentYear}`,
         subtituloEvolucion: `Balance total Año ${currentYear}`
@@ -668,6 +802,7 @@ export class DatabaseService {
 
     const totalGastosTodos = todosGastosDbTotal + histOctubre.gastos + histSeptiembre.gastos + histEneAgo.gastos;
     const totalIngresosTodos = todosIngresosDbTotal + histOctubre.ingresos + histSeptiembre.ingresos + histEneAgo.ingresos;
+    const ingresosTodosCategoria = agruparPorCategoria(todosIngresosDb.map(item => item.mov));
     const maximoTodos = Math.max(totalIngresosTodos, totalGastosTodos, 500000);
 
     const catTodos: { [cat: string]: number } = { ...categoriasHistOctSep };
@@ -691,6 +826,7 @@ export class DatabaseService {
       totalGastos: totalGastosTodos,
       totalIngresos: totalIngresosTodos,
       gastosPorCategoria: armarCategorias(catTodos, totalGastosTodos),
+      ingresosPorCategoria: armarCategorias(ingresosTodosCategoria, todosIngresosDbTotal),
       evolucion,
       subtituloPeriodo: 'Distribución histórica completa',
       subtituloEvolucion: 'Total consolidado histórico'

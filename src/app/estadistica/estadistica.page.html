@@ -66,6 +66,39 @@
     </ion-card>
   </section>
 
+  <!-- Sección: Ingresos por categoría -->
+  <section class="seccion-estadistica">
+    <h2 class="titulo-seccion">{{ t.ingresosPorCategoria }}</h2>
+
+    <ion-card class="tarjeta-estadistica">
+      <ion-card-header>
+        <ion-card-subtitle>{{ subtituloPeriodoTraducido }}</ion-card-subtitle>
+        <ion-card-title>{{ t.total }}: $ {{ totalIngresosPorCategoria | number:'1.2-2' }}</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        @if (ingresosPorCategoria.length === 0) {
+          <div class="sin-datos-msg">
+            <p>{{ t.sinIngresosCategoriaPeriodo }}</p>
+          </div>
+        }
+
+        @for (item of ingresosPorCategoria; track item.categoria) {
+          <div class="categoria-fila">
+            <div class="categoria-header">
+              <div class="categoria-nombre">
+                <ion-icon [name]="item.icono" [color]="item.color"></ion-icon>
+                <span>{{ langService.traducirCategoria(item.categoria) }}</span>
+              </div>
+              <span class="categoria-monto">$ {{ item.monto | number:'1.2-2' }} ({{ item.porcentaje }}%)</span>
+            </div>
+            <ion-progress-bar [value]="item.porcentaje / 100" [color]="item.color"></ion-progress-bar>
+          </div>
+        }
+      </ion-card-content>
+    </ion-card>
+  </section>
+
   <!-- Sección: Evolución mensual / temporal -->
   <section class="seccion-estadistica">
     <h2 class="titulo-seccion">{{ t.evolucionMensual }}</h2>

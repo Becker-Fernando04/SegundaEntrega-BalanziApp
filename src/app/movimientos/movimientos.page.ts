@@ -4,6 +4,8 @@ import { DatabaseService, Movimiento } from '../services/database.service';
 import { LanguageService, Traducciones } from '../services/language.service';
 import { Subscription } from 'rxjs';
 
+const TODAS_LAS_CATEGORIAS = '__todas__';
+
 @Component({
   selector: 'app-movimientos',
   templateUrl: './movimientos.page.html',
@@ -13,8 +15,17 @@ import { Subscription } from 'rxjs';
 export class MovimientosPage implements OnInit, OnDestroy {
 
   busqueda: string = '';
-  filtroSeleccionado: string = 'todos';
+  filtroSeleccionado: 'todos' | 'ingresos' | 'gastos' = 'todos';
+  categoriaSeleccionada: string | null = null;
   todosLosMovimientos: Movimiento[] = [];
+
+  private movimientosFiltradosCache: Movimiento[] = [];
+  private movimientosRecientesCache: Movimiento[] = [];
+  private movimientosAnterioresCache: Movimiento[] = [];
+  private cacheOrigen: Movimiento[] | null = null;
+  private cacheFiltro: 'todos' | 'ingresos' | 'gastos' = 'todos';
+  private cacheCategoria: string | null = null;
+  private cacheBusqueda: string = '';
 
   // Estado del modal de edición
   isModalEdicionOpen: boolean = false;
@@ -102,6 +113,49 @@ export class MovimientosPage implements OnInit, OnDestroy {
     await this.cargarMovimientos();
   }
 
+  async seleccionarFiltro(filtro: 'todos' | 'ingresos' | 'gastos'): Promise<void> {
+    this.filtroSeleccionado = filtro;
+    if (filtro === 'todos') {
+      this.categoriaSeleccionada = null;
+      return;
+    }
+
+    const categorias = filtro === 'ingresos' ? this.categoriasIngreso : this.categoriasGasto;
+    if (this.categoriaSeleccionada && !categorias.includes(this.categoriaSeleccionada)) {
+      this.categoriaSeleccionada = null;
+    }
+
+    const alert = await this.alertController.create({
+      header: this.t.filtrarPorCategoria,
+      subHeader: filtro === 'ingresos' ? this.t.filtroIngresos : this.t.filtroGastos,
+      inputs: [
+        {
+          type: 'radio',
+          label: this.t.todasLasCategorias,
+          value: TODAS_LAS_CATEGORIAS,
+          checked: this.categoriaSeleccionada === null
+        },
+        ...categorias.map(categoria => ({
+          type: 'radio' as const,
+          label: this.langService.traducirCategoria(categoria),
+          value: categoria,
+          checked: this.categoriaSeleccionada === categoria
+        }))
+      ],
+      buttons: [
+        { text: this.t.cancelar, role: 'cancel' },
+        {
+          text: this.t.aplicar,
+          handler: (valor: string) => {
+            this.categoriaSeleccionada = valor === TODAS_LAS_CATEGORIAS ? null : valor;
+          }
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
   async cargarMovimientos() {
     const list = await this.dbService.getMovimientos();
     this.ngZone.run(() => {
@@ -111,6 +165,31 @@ export class MovimientosPage implements OnInit, OnDestroy {
   }
 
   get movimientosFiltrados(): Movimiento[] {
+    this.actualizarCacheMovimientos();
+    return this.movimientosFiltradosCache;
+  }
+
+  get movimientosRecientes(): Movimiento[] {
+    this.actualizarCacheMovimientos();
+    return this.movimientosRecientesCache;
+  }
+
+  get movimientosAnteriores(): Movimiento[] {
+    this.actualizarCacheMovimientos();
+    return this.movimientosAnterioresCache;
+  }
+
+  private actualizarCacheMovimientos(): void {
+    const busquedaNormalizada = this.busqueda.trim().toLowerCase();
+    if (
+      this.cacheOrigen === this.todosLosMovimientos &&
+      this.cacheFiltro === this.filtroSeleccionado &&
+      this.cacheCategoria === this.categoriaSeleccionada &&
+      this.cacheBusqueda === busquedaNormalizada
+    ) {
+      return;
+    }
+
     let list = this.todosLosMovimientos;
 
     if (this.filtroSeleccionado === 'ingresos') {
@@ -119,8 +198,12 @@ export class MovimientosPage implements OnInit, OnDestroy {
       list = list.filter(m => m.tipo === 'gasto');
     }
 
-    if (this.busqueda && this.busqueda.trim() !== '') {
-      const q = this.busqueda.toLowerCase().trim();
+    if (this.categoriaSeleccionada) {
+      list = list.filter(m => m.categoria === this.categoriaSeleccionada);
+    }
+
+    if (busquedaNormalizada) {
+      const q = busquedaNormalizada;
       list = list.filter(m =>
         m.descripcion.toLowerCase().includes(q) ||
         m.categoria.toLowerCase().includes(q) ||
@@ -128,15 +211,13 @@ export class MovimientosPage implements OnInit, OnDestroy {
       );
     }
 
-    return list;
-  }
-
-  get movimientosRecientes(): Movimiento[] {
-    return this.movimientosFiltrados.slice(0, 3);
-  }
-
-  get movimientosAnteriores(): Movimiento[] {
-    return this.movimientosFiltrados.slice(3);
+    this.cacheOrigen = this.todosLosMovimientos;
+    this.cacheFiltro = this.filtroSeleccionado;
+    this.cacheCategoria = this.categoriaSeleccionada;
+    this.cacheBusqueda = busquedaNormalizada;
+    this.movimientosFiltradosCache = list;
+    this.movimientosRecientesCache = list.slice(0, 3);
+    this.movimientosAnterioresCache = list.slice(3);
   }
 
   // --- MODIFICACIÓN DE MOVIMIENTO ---
