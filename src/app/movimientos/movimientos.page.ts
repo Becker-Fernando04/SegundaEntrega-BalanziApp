@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, NgZone } from '@angula
 import { AlertController, ToastController } from '@ionic/angular';
 import { DatabaseService, Movimiento } from '../services/database.service';
 import { LanguageService, Traducciones } from '../services/language.service';
+import { estaDentroDelUltimoAno } from './movimientos-date';
 import { Subscription } from 'rxjs';
 
 const TODAS_LAS_CATEGORIAS = '__todas__';
@@ -26,6 +27,7 @@ export class MovimientosPage implements OnInit, OnDestroy {
   private cacheFiltro: 'todos' | 'ingresos' | 'gastos' = 'todos';
   private cacheCategoria: string | null = null;
   private cacheBusqueda: string = '';
+  private cacheDia: string = '';
 
   // Estado del modal de edición
   isModalEdicionOpen: boolean = false;
@@ -114,17 +116,21 @@ export class MovimientosPage implements OnInit, OnDestroy {
   }
 
   async seleccionarFiltro(filtro: 'todos' | 'ingresos' | 'gastos'): Promise<void> {
-    this.filtroSeleccionado = filtro;
+    this.ngZone.run(() => {
+      this.filtroSeleccionado = filtro;
+      const categorias = filtro === 'ingresos' ? this.categoriasIngreso : this.categoriasGasto;
+      if (filtro === 'todos' || (this.categoriaSeleccionada && !categorias.includes(this.categoriaSeleccionada))) {
+        this.categoriaSeleccionada = null;
+      }
+      this.invalidarCacheMovimientos();
+      this.cdr.detectChanges();
+    });
+
     if (filtro === 'todos') {
-      this.categoriaSeleccionada = null;
       return;
     }
 
     const categorias = filtro === 'ingresos' ? this.categoriasIngreso : this.categoriasGasto;
-    if (this.categoriaSeleccionada && !categorias.includes(this.categoriaSeleccionada)) {
-      this.categoriaSeleccionada = null;
-    }
-
     const alert = await this.alertController.create({
       header: this.t.filtrarPorCategoria,
       subHeader: filtro === 'ingresos' ? this.t.filtroIngresos : this.t.filtroGastos,
@@ -147,13 +153,22 @@ export class MovimientosPage implements OnInit, OnDestroy {
         {
           text: this.t.aplicar,
           handler: (valor: string) => {
-            this.categoriaSeleccionada = valor === TODAS_LAS_CATEGORIAS ? null : valor;
+            this.ngZone.run(() => {
+              this.categoriaSeleccionada = valor === TODAS_LAS_CATEGORIAS ? null : valor;
+              this.invalidarCacheMovimientos();
+              this.cdr.detectChanges();
+            });
           }
         }
       ]
     });
 
     await alert.present();
+    await alert.onDidDismiss();
+    this.ngZone.run(() => {
+      this.invalidarCacheMovimientos();
+      this.cdr.detectChanges();
+    });
   }
 
   async cargarMovimientos() {
@@ -181,11 +196,14 @@ export class MovimientosPage implements OnInit, OnDestroy {
 
   private actualizarCacheMovimientos(): void {
     const busquedaNormalizada = this.busqueda.trim().toLowerCase();
+    const hoy = new Date();
+    const diaActual = hoy.toDateString();
     if (
       this.cacheOrigen === this.todosLosMovimientos &&
       this.cacheFiltro === this.filtroSeleccionado &&
       this.cacheCategoria === this.categoriaSeleccionada &&
-      this.cacheBusqueda === busquedaNormalizada
+      this.cacheBusqueda === busquedaNormalizada &&
+      this.cacheDia === diaActual
     ) {
       return;
     }
@@ -215,9 +233,17 @@ export class MovimientosPage implements OnInit, OnDestroy {
     this.cacheFiltro = this.filtroSeleccionado;
     this.cacheCategoria = this.categoriaSeleccionada;
     this.cacheBusqueda = busquedaNormalizada;
+    this.cacheDia = diaActual;
     this.movimientosFiltradosCache = list;
-    this.movimientosRecientesCache = list.slice(0, 3);
-    this.movimientosAnterioresCache = list.slice(3);
+    this.movimientosRecientesCache = list
+      .filter(movimiento => estaDentroDelUltimoAno(movimiento.fecha, hoy))
+      .slice(0, 3);
+    const recientes = new Set(this.movimientosRecientesCache);
+    this.movimientosAnterioresCache = list.filter(movimiento => !recientes.has(movimiento));
+  }
+
+  private invalidarCacheMovimientos(): void {
+    this.cacheOrigen = null;
   }
 
   // --- MODIFICACIÓN DE MOVIMIENTO ---

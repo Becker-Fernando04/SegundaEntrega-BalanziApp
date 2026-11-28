@@ -25,7 +25,7 @@
   </ion-searchbar>
 
   <!-- Botonera: Todos, Ingresos, Gastos -->
-  <ion-segment [(ngModel)]="filtroSeleccionado" mode="md" class="botonera-segment">
+  <ion-segment [value]="filtroSeleccionado" mode="md" class="botonera-segment">
     <ion-segment-button value="todos" (click)="seleccionarFiltro('todos')">
       <ion-label>{{ t.filtroTodos }}</ion-label>
     </ion-segment-button>

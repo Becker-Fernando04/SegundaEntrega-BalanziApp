@@ -66,16 +66,17 @@ export class LoginPage implements OnInit, OnDestroy {
   }
 
   async iniciarSesionGoogle() {
+    if (this.cargando) return;
     this.cargando = true;
     try {
       await this.firebaseService.iniciarSesionGoogle();
       await this.mostrarToast(this.t.inicioGoogleExitoso, 'success');
       this.router.navigate(['/tabs/inicio']);
     } catch (error: any) {
-      console.error('Error Google Auth:', error);
       if (error?.code === 'auth/multi-factor-auth-required') {
         await this.manejarDesafio2FA(error);
-      } else if (error?.code !== 'auth/popup-closed-by-user') {
+      } else if (error?.code !== 'auth/popup-closed-by-user' && error?.code !== 'auth/cancelled-popup-request') {
+        console.error('Error Google Auth:', error);
         await this.mostrarToast(error?.message || this.t.errorProcesarSolicitud, 'danger');
       }
     } finally {
